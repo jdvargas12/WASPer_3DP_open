@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <WASPerManifestHeader>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\01_WASPer_3DP\Components\0.0_WASPer_3DP\manifest.header.yml'))</WASPerManifestHeader>
+    <WASPerVersion>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(WASPerManifestHeader)')), '(?m)^version:\s*([0-9]+(?:\.[0-9]+){3})\s*$').Groups[1].Value)</WASPerVersion>
+    <Version>$(WASPerVersion)</Version>
+    <AssemblyVersion>$(WASPerVersion)</AssemblyVersion>
+    <FileVersion>$(WASPerVersion)</FileVersion>
+    <InformationalVersion>$(WASPerVersion)</InformationalVersion>
+  </PropertyGroup>
+
+  <Target Name="ValidateWASPerVersion" BeforeTargets="PrepareForBuild">
+    <Error Condition="'$(WASPerVersion)' == ''"
+           Text="WASPer version is missing or invalid in $(WASPerManifestHeader). Expected four parts, for example 1.0.5.8." />
+  </Target>
+</Project>

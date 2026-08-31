@@ -1,0 +1,17 @@
+﻿# WASPer_3DP — editor defaults
+#
+# Force UTF-8 WITH BOM so non-ASCII characters (λ, ρ, ω, α, δ, ³, —, · …) are never
+# misdetected as Windows-1252 on open and re-saved as mojibake (λ, Ïc, â€", ·).
+# The BOM is the signal every editor uses to lock the file as UTF-8. Honored by
+# Visual Studio, VS Code, Rider and other EditorConfig-aware editors on SAVE.
+#
+# Note: this governs FUTURE saves. Files already corrupted must be repaired once,
+# and BOM-less (but still-correct) files should be re-saved once to gain the BOM.
+
+root = true
+
+[*.cs]
+charset = utf-8-bom
+
+[*.{txt,md}]
+charset = utf-8-bom

@@ -1,0 +1,19 @@
+WASPer_3DP PACKAGE PUBLICATION
+==============================
+
+The release builder is the supported maintainer workflow:
+
+1. Run `00_Release/Open-WASPer-ReleaseBuilder.cmd` from the repository root.
+2. Enter the four-part WASPer version and choose a local publication root.
+3. The builder updates `manifest.header.yml`, builds Release, and stages both the
+   Package Manager and food4Rhino layouts without a hard-coded user path.
+
+On an unconfigured clone, generated publication folders default to:
+
+  01_WASPer_3DP/bin/Release/Published/
+
+Before publishing, run:
+
+  powershell -ExecutionPolicy Bypass -File 00_OpenSource/Test-Phase1Boundary.ps1
+
+The Phase 1 boundary check and complete solution build must both succeed.

@@ -1,0 +1,100 @@
+name: WASPer_3DP
+version: 1.0.4.7
+authors:
+  - Juan Diego Vargas
+website: https://www.linkedin.com/in/juan-diego-vargas-vel/
+description: |
+  WASPer_3DP is a Grasshopper plugin for planar 3D printing using LDM technologies like the WASP40100. It includes components for slicing, generating Marlin G-code, path optimization, and water need calculations for large-scale, clay-based, and viscous material printing.
+keywords:
+  - Planar_3D_printing
+  - G_code
+  - LDM
+  - path_optimization
+  - Heat_transfer 
+platform: any
+rhino: "8.0"
+rhino_version: ">=8.0.0 <9.0.0"
+files:
+  # user_objects
+  - file: ghuser/wsp_Ut01_Move Sliders.ghuser
+  - file: ghuser/wsp_Ut02_Write Colibri Data to CSV.ghuser
+  - file: ghuser/wsp_Ut02_Write to CSV.ghuser
+  - file: ghuser/wsp_Ut03_Read from CSV.ghuser
+  - file: ghuser/wsp_Ut04_Read Json.ghuser
+  - file: ghuser/wsp_Ut05_Round Number.ghuser
+  - file: ghuser/wsp_Ut06_Open URL.ghuser
+  - file: ghuser/wsp_Ut07_Install Py Libs.ghuser
+  - file: ghuser/wsp_Ut08_ChatGPT v1.ghuser
+  - file: ghuser/wsp_Ut10_Save Image from Viewport.ghuser
+
+  - file: ghuser/wsp_In01_S Infill 2D.ghuser
+  - file: ghuser/wsp_In02_Spiral Infill 2D.ghuser
+  - file: ghuser/wsp_In03_Voxelize (Orthogonal Infill).ghuser
+  - file: ghuser/wsp_In04_Morph Between Surfaces (Conformal Infill).ghuser
+  - file: ghuser/wsp_In05_Cell Selector (Crystallon).ghuser
+  - file: ghuser/wsp_In06_Cell Type (Crystallon).ghuser
+  - file: ghuser/wsp_In07_Populate With Cells (Crystallon).ghuser
+
+  - file: ghuser/wsp_Gc03_Marlin Gcode (Fillament multiplier).ghuser
+  - file: ghuser/wsp_Gc03_Marlin Gcode LDM (From points).ghuser
+  - file: ghuser/wsp_Ma02_Gas Materials (Air).ghuser
+  - file: ghuser/wsp_Ma05_Water Need Dry.ghuser
+  - file: ghuser/wsp_Ma06_Water Need Wet.ghuser
+
+  - file: ghuser/wsp_Ch03_Tortuosity Assessment_v1.ghuser
+
+  - file: "ghuser/wsp_Ht01_Analytical Solver v2 (ISO 6946_2017).ghuser"
+
+  - file: ghuser/wsp_Da01_Matplotlib Scatter Plot.ghuser
+  - file: ghuser/wsp_Da02_Matplotlib Bar Plot.ghuser
+
+  # Icons (root)
+  - file: icons/WASPer_3DP.png
+  - file: icons/00_WASPer_3DP.png
+
+  # Icons 24x24
+  - file: icons/24x24/01_WASPer_3DP.png
+  - file: icons/24x24/02_GenGcode.png
+  - file: icons/24x24/03_SaveDcode.png
+  - file: icons/24x24/04_PpathOpt.png
+  - file: icons/24x24/05_CloseCrvs.png
+  - file: icons/24x24/05_WaterWet.png
+  - file: icons/24x24/07_WaterDry.png
+  - file: icons/24x24/08_MeshrRed.png
+  - file: icons/24x24/09_Slice.png
+  - file: icons/24x24/09_Slice_2.png
+  - file: icons/24x24/11_S_Infill.png
+  - file: icons/24x24/12_SpiralInfill.png
+  - file: icons/24x24/13_Grid_from_mesh.png
+  - file: icons/24x24/14_Grid_from_mesh_mult.png
+  - file: icons/24x24/15_solid_mat.png
+  - file: icons/24x24/16_heat_transfer.png
+  - file: icons/24x24/16_heat_transfer_2.png
+  - file: icons/24x24/17_surface_area.png
+  - file: icons/24x24/18_Tortuosity.png
+  - file: icons/24x24/wsp_Ch04_Porosity.png
+  - file: icons/24x24/wsp_Gc00_Visualize_Gcode_Path_and_Fluxes.png
+  - file: icons/24x24/wsp_Gc06_Printing_Path_from_Gcode.png
+  - file: icons/24x24/wsp_In03_Voxelize.png
+  - file: icons/24x24/wsp_In04_Morph Between.png
+  - file: icons/24x24/wsp_In07_Populate With Cells.png
+  - file: icons/24x24/wsp_Ma02_Gas Materials_Air.png
+  - file: icons/24x24/wsp_Sl00_Visualize_Printing_Path.png
+  - file: icons/24x24/wsp_Sl01_SlicerPlus.png
+  - file: icons/24x24/wsp_Ut01_Move Sliders.png
+  - file: icons/24x24/wsp_Ut02_Write to CSV.png
+  - file: icons/24x24/wsp_Ut03_Read from CSV.png
+  - file: icons/24x24/wsp_Ut04_Read Json.png
+  - file: icons/24x24/wsp_Ut05_Round Number.png
+  - file: icons/24x24/wsp_Ut06_Open URL.png
+  - file: icons/24x24/wsp_Ut08_ChatGPT v1.png
+  - file: icons/24x24/wsp_Ut10_Save Image from Viewport.png
+
+  # Material Lib
+  - file: mat_lib/Material_Lib_250430.xlsx
+
+  # Example files
+  - file: examples/251201_3DPrinting.gh
+  - file: examples/250612_HeatTransfer.gh
+
+icon: icons/WASPer_3DP.png

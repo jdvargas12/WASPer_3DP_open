@@ -1,0 +1,4 @@
+interface:
+  display_name: "WASPer Eto UI"
+  short_description: "Build and review cross-platform WASPer Eto interfaces"
+  default_prompt: "Review or implement this WASPer Eto UI change using the project lifecycle, layout, interaction, and runtime-verification rules."

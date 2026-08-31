@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & support
+    url: https://github.com/jdvargas12/WASPer_3DP/blob/master/SUPPORT.md
+    about: Where to ask questions and get help before filing an issue.
+  - name: Security vulnerability
+    url: https://github.com/jdvargas12/WASPer_3DP/blob/master/SECURITY.md
+    about: Please report vulnerabilities privately - do not open a public issue.

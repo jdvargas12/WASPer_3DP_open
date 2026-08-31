@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- M6 (Mobile and QR Connection, 2026-08-19). Without this the page renders at a fixed
+     desktop-width virtual viewport (~980px) and gets scaled down wholesale, which is why a
+     phone would otherwise show a tiny, unusably cramped copy of the desktop layout regardless
+     of any @media rules below. user-scalable=no is deliberate, not an oversight: this is a
+     full-screen 3D viewer where pinch/drag are meant to orbit the model (see OrbitControls +
+     the touch-action: none rules below), not zoom the page itself -- same convention most
+     full-screen WebGL viewers use. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>WASPer Process Viewer</title>
+<link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+<div id="viewport"></div>
+
+<div id="hud">
+  <!-- Drag this edge to resize #hud -- see the JS drag handler below (hudResizeHandle) and the
+       #hudResizeHandle/#hud CSS comments above for why this exists (long KPI values). -->
+  <div id="hudResizeHandle" title="Drag to resize"></div>
+  <h1 id="jobTitle"><span id="jobTitleText">Waiting for WASPer&hellip;</span><span id="liveStatus"></span></h1>
+  <div class="row"><span>Branches</span><span id="statBranches">&mdash;</span></div>
+  <div class="row"><span>Segments</span><span id="statSegments">&mdash;</span></div>
+  <div class="row"><span>Layers</span><span id="statLayers">&mdash;</span></div>
+  <div class="row"><span>Duration</span><span id="statDuration">&mdash;</span></div>
+  <div class="row"><span>Bounding box</span><span id="statBBox">&mdash;</span></div>
+  <div id="paletteControl">
+    <label for="paletteSelect">Palette</label>
+    <select id="paletteSelect" aria-label="Print path palette"></select>
+  </div>
+  <div id="legend"></div>
+  <!-- Simple UI (the phone default) shows this instead of the inline #kpiPanel below -- see the
+       body.simple-ui CSS comment and #kpiFullOverlay's own comment for why. Always present in the
+       DOM (both here and the full UI's inline panel keep the same data in sync, see
+       buildKpiRows) -- only which one is *visible* depends on which UI mode is active. -->
+  <button id="openKpisButton">KPIs</button>
+  <div id="kpiPanel">
+    <div id="kpiHeader" class="row"><span><span id="kpiChevron">&#9656;</span> KPIs</span><span id="kpiCount"></span></div>
+    <div id="kpiBody"></div>
+    <div id="kpiEmpty">No KPIs in this package.</div>
+  </div>
+  <div id="loadFile">
+    <input type="text" id="filePathInput" placeholder="Full path to a .wasperxr file" />
+    <button id="loadFileButton">Load</button>
+  </div>
+  <div id="loadError"></div>
+</div>
+
+<div id="controls">
+  <!-- Added 2026-08-19 for a clean, less-cluttered view of the model (phone screens especially --
+       every other panel here eats real screen space); renamed "Hide UI" -> "Simple UI" and scope
+       narrowed the same day, per feedback: playback, Path/Mesh, and the role toggles stay visible
+       -- only the job title/stats/KPIs/load-file box and the profile dropdown/Reset Camera go
+       away. Lives inside #controls rather than as its own independently-positioned element
+       specifically so it inherits #controls' already-correct per-breakpoint position (top-right
+       on desktop, bottom bar on mobile) for free -- see the body.simple-ui CSS rules for how the
+       specific pieces that stay visible are spared. -->
+  <button id="toggleUiButton" title="Simplify the view -- keeps playback, Path/Mesh, and role toggles, hides the rest">Simple UI</button>
+  <div id="modeGroup">
+    <!-- Ghost (GPU raymarch) is temporarily disabled -- tested slower than Mesh
+         in a real browser. The port (buildGhostMode and friends, below) is left
+         in place, just not wired to a button, so it's a one-line job to bring
+         back if that changes (e.g. after batch-size tuning). -->
+    <button id="modePath" data-mode="path">Path</button>
+    <button id="modeMesh" data-mode="mesh">Mesh</button>
+    <select id="meshQuality" aria-label="Mesh representation" title="Choose a connected or faster bead preview">
+      <option value="continuous">Continuous</option>
+      <option value="fast">Fast</option>
+    </select>
+    <button id="modeContext" data-mode="context" title="Show or hide Sm05 context geometry">Context</button>
+    <!-- M10 (Spatial Registration, added 2026-08-19): a dashed wireframe of the visible scene's
+         full extent. It encloses print geometry alone when Context is hidden and includes Sm05
+         context when Context is visible. On by default as an immediate scale reference. -->
+    <button id="modeBBox" data-mode="bbox">BBox</button>
+    <!-- Moved here from its own spot in #controls (2026-08-19, per feedback: "beside BBox") --
+         not a toggle like its neighbors (no .active state, just fires resetCamera() once), but
+         living in #modeGroup means it inherits that group's exemption from both Simple UI's and
+         AR Show UI's hide-most-of-#controls rules for free, matching Path/Mesh/BBox rather than
+         needing its own separate entry in each of those selector lists. -->
+    <button id="resetCamera">Reset Camera</button>
+  </div>
+  <!-- Removed 2026-08-19: the bead cross-section profile dropdown let someone pick between
+       Ellipse(2)/3/Squircle(6), but was rarely touched and, being the widest item in #controls's
+       row, was the one most likely to push the row onto a second line -- which on top of AR's own
+       recent #controls-height-dependent positioning math (#arControls docks relative to this
+       row's height, see its CSS comment) made the whole row's height less predictable than it
+       needed to be. PROFILE_EXPONENT below now just hardcodes the default (4) it was always
+       preset to (buildBeadGeometry/uProfileExponent, further down) -- flip that one constant back
+       to a <select> if per-job control over this ever actually gets used. -->
+  <!-- Temporarily deactivated, 2026-08-19 scope pullback ("focus on XR, dashboard/standalone can
+       wait, maybe deactivate more than remove"): hidden rather than deleted so the overlay markup
+       and its JS below stay intact and ready -- just flip this back to a plain <button> tag to
+       restore it. -->
+  <button id="openDashboard" style="display:none">Dashboard</button>
+</div>
+
+<!-- M9 (WebXR, first pass -- AR only, added 2026-08-19): a standalone wrapper rather than a
+     member of #controls, so it can stay visible (and reachable as the only way back out of an AR
+     session) while body.ar-active hides everything else desktop/mobile-oriented -- the existing
+     HUD/KPI panel/timeline don't make sense overlaid on a phone camera feed. arButton is hidden
+     by default and only shown once JS below confirms navigator.xr reports immersive-ar as
+     supported -- WebXR also requires a secure context (HTTPS, or localhost/127.0.0.1), so this
+     stays hidden for anyone reaching the viewer over a plain http://<lan-ip> URL even on
+     AR-capable hardware; see the comment near arButton's feature-detection code for the (dev-only)
+     workaround. arShowUiButton (added 2026-08-19, moved into this wrapper the same day per
+     feedback so it renders directly under Exit AR rather than down in #arOverlay with the
+     sliders) brings back the same Simple UI subset (playback, Path/Mesh, role toggles) the
+     desktop toggleUiButton shows, via its own body.ar-active.ar-ui-visible CSS, kept independent
+     from toggleUiButton's body.simple-ui so the two don't silently flip each other. -->
+<div id="arControls">
+  <button id="arButton" style="display:none">Enter AR</button>
+  <button id="arShowUiButton">Show UI</button>
+</div>
+
+<!-- Composited over the camera passthrough via the WebXR 'dom-overlay' feature (requested
+     alongside hit-test/local-floor below) -- see the #arOverlay CSS comment above for why this is
+     its own small panel rather than the whole page. arHint is shown the moment AR starts (before
+     any surface has been tapped) and hidden again once the model is actually placed (onArSelect).
+     arScaleSlider is a click-and-drag alternative to the two-finger pinch gesture (below in the
+     script), kept in sync with it either way since both just set contentGroup's scale.
+     arRotateSlider spins the placed model around the world's vertical axis -- see
+     AR_UP_CONVERSION/applyArOrientation below. Both render vertical (see #arScaleRow/#arRotateRow
+     CSS above) per 2026-08-19 feedback, side by side in #arSliders -- easier to reach one-handed
+     from the bottom-right corner they live in than a horizontal slider spanning sideways would be. -->
+<div id="arOverlay">
+  <!-- Collapse toggle (2026-08-19 follow-up) -- see #arCollapseButton/#arOverlay.collapsed CSS
+       above. Always the first child and exempted from the .collapsed hide-everything rule so it
+       stays reachable to expand the panel again. -->
+  <button id="arCollapseButton" title="Collapse this panel">&#9660;</button>
+  <div id="arHint">Point at a surface, then tap to place</div>
+  <!-- M10 spatial registration, simplified 2026-08-19 down from an earlier drag-to-adjust
+       rectangle (plane detection, corner dragging, its own Confirm step) that proved unreliable
+       on-device: while calibrating, every tap on the reticle just re-detects the placement point
+       at true real-world scale (see onArSelect/jobMetresPerUnit in the script), kept hidden until
+       Place Object (below) is tapped to reveal it there. -->
+  <button id="arCalibrateButton">Calibrate</button>
+  <!-- Normal tap placement is locked after the first valid surface tap so later screen/UI
+       interactions cannot silently move the model. This button explicitly re-enables the
+       reticle and permits one new placement tap. -->
+  <button id="arRepositionButton" style="display:none">Reposition</button>
+  <!-- 2026-08-19 follow-up: lets the user pick auto-fit-to-a-tabletop-footprint (same sizing
+       freeform placement always uses) over calibration's default true 1:1 real-world scale, for
+       jobs whose real size would be awkwardly large (or tiny) to view up close on a phone screen.
+       Only affects contentGroup's scale while isCalibrating (see updateCalibrationTracking) --
+       toggling it after Place Object has locked a calibration in has no effect until the next
+       Calibrate, same as the Scale slider below. -->
+  <button id="arFitScreenButton" title="Auto-fit the model to a comfortable on-screen size instead of true real-world scale">Fit to Screen</button>
+  <!-- Hidden until a tap during calibration has set a pending placement point (see onArSelect) --
+       reveals contentGroup there and locks the placement in. -->
+  <button id="arPlaceObjectButton" style="display:none">Place Object</button>
+  <div id="arSliders">
+    <label id="arScaleRow">Scale
+      <input type="range" id="arScaleSlider" min="0.2" max="5" step="0.01" value="1" />
+    </label>
+    <label id="arRotateRow">Rotate
+      <input type="range" id="arRotateSlider" min="-180" max="180" step="1" value="0" />
+    </label>
+  </div>
+</div>
+
+<div id="timeline">
+  <button id="playToggle" class="playbackButton" title="Play">&#9654;&#65038;</button>
+  <button id="stopPlayback" class="playbackButton" title="Stop">&#9632;&#65038;</button>
+  <input type="range" id="timeSlider" min="0" max="1" step="0.01" value="0" title="Scrub print time" />
+  <span class="readout" id="timeReadout">0.0s / 0.0s</span>
+  <input type="range" id="speedSlider" min="-200" max="1000" step="25" value="100"
+    title="Playback speed, matching Gc05's playback popup -- negative plays in reverse" />
+  <span class="readout" id="speedReadout">100%</span>
+</div>
+<div id="externalPlaybackNote">External sim_par is driving this job (Sm05 XR Scene Params) &mdash; playback controls disabled.</div>
+
+<div id="status">Path: printed solid, pending translucent.</div>
+
+<!-- Full-screen KPIs panel (added 2026-08-19) -- see #kpiFullOverlay's own CSS comment above for
+     why this exists alongside the inline #kpiPanel rather than replacing it: Simple UI (the phone
+     default) opens this via #openKpisButton instead, since a dozen-plus KPI rows need real screen
+     space to read on a phone the same way the Study Dashboard below needs it for its charts. -->
+<div id="kpiFullOverlay">
+  <div id="kpiFullPanel">
+    <div id="kpiFullHeader">
+      <div><h2>KPIs</h2> <span id="kpiFullCount"></span></div>
+      <button id="kpiFullClose">Close</button>
+    </div>
+    <div id="kpiFullBody"></div>
+    <div id="kpiFullEmpty">No KPIs in this package.</div>
+  </div>
+</div>
+
+<!-- Study Dashboard -- mirrors Sm01's native Dashboard tab (History/Scatter/
+     Histogram/Correlation heatmap/Parallel coordinates over a study.json's
+     iterations), opened as a full-panel overlay since five charts need real
+     screen space rather than a HUD-corner popup. Populated from study.json
+     via /api/study, not part of the always-loaded job data -- a study is
+     optional and separate from the single 3D job the rest of the page shows. -->
+<div id="dashboardOverlay">
+  <div id="dashboardPanel">
+    <div id="dashboardHeader">
+      <h2>Study Dashboard</h2>
+      <button id="dashboardClose">Close</button>
+    </div>
+    <div id="dashboardLoadRow">
+      <input type="text" id="studyPathInput" placeholder="Full path to a study.json file" />
+      <button id="studyLoadButton">Load</button>
+    </div>
+    <div id="dashboardStatus"></div>
+
+    <section class="dashCard" id="dashHistoryCard">
+      <h3>KPI history</h3>
+      <div class="dashCardControls">
+        <label>KPI <select id="dashHistoryKpi"></select></label>
+      </div>
+      <canvas id="dashHistoryCanvas" height="220"></canvas>
+    </section>
+
+    <section class="dashCard" id="dashScatterCard">
+      <h3>X vs Y scatter</h3>
+      <div class="dashCardControls">
+        <label>X <select id="dashScatterX"></select></label>
+        <label>Y <select id="dashScatterY"></select></label>
+        <label>Style
+          <select id="dashScatterStyle">
+            <option value="Markers">Markers</option>
+            <option value="Line">Line</option>
+            <option value="LineMarkers">Line + markers</option>
+          </select>
+        </label>
+        <label>Colour by <select id="dashScatterColor"></select></label>
+      </div>
+      <canvas id="dashScatterCanvas" height="260"></canvas>
+    </section>
+
+    <section class="dashCard" id="dashHistogramCard">
+      <h3>Distribution / histogram</h3>
+      <div class="dashCardControls">
+        <label>Variable <select id="dashHistogramVar"></select></label>
+        <label>Style
+          <select id="dashHistogramStyle">
+            <option value="Bars">Bars</option>
+            <option value="Region">Region</option>
+            <option value="Density">Density</option>
+          </select>
+        </label>
+        <label id="dashHistogramBinsRow">Bins <input type="number" id="dashHistogramBins" min="2" max="60" value="11" /></label>
+        <label id="dashHistogramBandwidthRow" style="display:none">Smoothing % <input type="number" id="dashHistogramBandwidth" min="10" max="300" value="100" /></label>
+      </div>
+      <canvas id="dashHistogramCanvas" height="220"></canvas>
+    </section>
+
+    <section class="dashCard" id="dashHeatmapCard">
+      <h3>Correlation heatmap</h3>
+      <div class="dashCardControls">
+        <span style="font-size:11px;color:#6f6f7e">Pearson correlation across numeric parameters and KPIs (up to 14 variables).</span>
+      </div>
+      <canvas id="dashHeatmapCanvas" height="420"></canvas>
+    </section>
+
+    <section class="dashCard" id="dashParallelCard">
+      <h3>Parallel coordinates</h3>
+      <div class="dashCardControls">
+        <span style="font-size:11px;color:#6f6f7e">One line per iteration, one axis per variable (0&ndash;1 normalized, up to 14 variables).</span>
+      </div>
+      <canvas id="dashParallelCanvas" height="320"></canvas>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module" src="js/viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "0.1.0",
+  "type": "wasper.xr.printPlan",
+  "jobId": "wasper-xr-sample",
+  "revision": 1,
+  "timestampUtc": "2026-08-13T12:00:00.0000000Z",
+  "pluginVersion": "v1.0.5",
+  "coordinates": {
+    "frame": "WASPer",
+    "units": "Millimeters",
+    "metresPerUnit": 0.001,
+    "handedness": "right",
+    "upAxis": "+Z"
+  },
+  "payload": {
+    "meshes": [
+      {
+        "id": "mesh-0",
+        "vertices": [[0, 0, 0], [100, 0, 0], [100, 100, 0], [0, 100, 0]],
+        "normals": [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]],
+        "faces": [[0, 1, 2, 3]],
+        "colorsRgba": [[190, 88, 52, 255], [190, 88, 52, 255], [190, 88, 52, 255], [190, 88, 52, 255]]
+      }
+    ],
+    "paths": [
+      {
+        "branchIndex": 0,
+        "branchPath": "{0;0}",
+        "layerIndex": 0,
+        "role": 1,
+        "roleName": "Shell",
+        "strokeId": 0,
+        "closed": false,
+        "positions": [[0, 0, 1], [50, 0, 1], [100, 0, 1]],
+        "xAxes": [[1, 0, 0], [1, 0, 0], [1, 0, 0]],
+        "yAxes": [[0, 1, 0], [0, 1, 0], [0, 1, 0]],
+        "zAxes": [[0, 0, 1], [0, 0, 1], [0, 0, 1]],
+        "values": {
+          "flow": [1, 1, 1],
+          "printSpeed": [1200, 1200, 1200],
+          "layerHeight": [1, 1, 1],
+          "layerWidth": [4, 4, 4]
+        }
+      }
+    ],
+    "motions": [
+      {
+        "index": 0,
+        "type": "zhop",
+        "layerIndex": 0,
+        "branchIndex": 0,
+        "branchPath": "{0;0}",
+        "pointIndex": 0,
+        "role": 1,
+        "roleName": "Shell",
+        "from": [0, 0, 6],
+        "to": [0, 0, 1],
+        "feedrateMmPerMinute": 600,
+        "lengthModelUnits": 5,
+        "startTimeSeconds": 0,
+        "endTimeSeconds": 0.5
+      },
+      {
+        "index": 1,
+        "type": "print",
+        "layerIndex": 0,
+        "branchIndex": 0,
+        "branchPath": "{0;0}",
+        "pointIndex": 1,
+        "role": 1,
+        "roleName": "Shell",
+        "from": [0, 0, 1],
+        "to": [50, 0, 1],
+        "feedrateMmPerMinute": 1200,
+        "lengthModelUnits": 50,
+        "startTimeSeconds": 0.5,
+        "endTimeSeconds": 3
+      },
+      {
+        "index": 2,
+        "type": "print",
+        "layerIndex": 0,
+        "branchIndex": 0,
+        "branchPath": "{0;0}",
+        "pointIndex": 2,
+        "role": 1,
+        "roleName": "Shell",
+        "from": [50, 0, 1],
+        "to": [100, 0, 1],
+        "feedrateMmPerMinute": 1200,
+        "lengthModelUnits": 50,
+        "startTimeSeconds": 3,
+        "endTimeSeconds": 5.5
+      }
+    ],
+    "summary": {
+      "meshCount": 1,
+      "meshVertexCount": 4,
+      "meshFaceCount": 1,
+      "pathBranchCount": 1,
+      "pathPointCount": 3,
+      "motionCount": 3,
+      "layerCount": 1,
+      "durationSeconds": 5.5,
+      "bounds": {
+        "min": [0, 0, 0],
+        "max": [100, 100, 1]
+      },
+      "kpis": {
+        "unitsCode": 0,
+        "timeMinutes": 0.09166666666666666,
+        "pathLength": 100,
+        "layers": 1
+      }
+    }
+  }
+}

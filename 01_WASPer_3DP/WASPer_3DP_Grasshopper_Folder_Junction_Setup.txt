@@ -1,0 +1,38 @@
+WASPer_3DP LOCAL GRASSHOPPER JUNCTION SETUP
+============================================
+
+This is an optional Windows development convenience. Public builds do not require
+a junction, and no maintainer-specific path is assumed.
+
+1. Build the main project in Visual Studio or from the repository root:
+
+   dotnet build 01_WASPer_3DP/WASPer_3DP.csproj
+
+2. Open Grasshopper's Libraries folder from:
+
+   Grasshopper > File > Special Folders > Components Folder
+
+3. Open an elevated Command Prompt in that folder and create a junction whose
+   target is your clone's actual build output. Example:
+
+   mklink /J WASPer_3DP "<REPOSITORY>\01_WASPer_3DP\bin\Debug\net8.0-windows"
+
+4. Restart Rhino and Grasshopper.
+
+To switch from Debug to Release, remove only the junction and create it again with:
+
+   mklink /J WASPer_3DP "<REPOSITORY>\01_WASPer_3DP\bin\Release\net8.0-windows"
+
+Do not commit local junctions, Rhino library copies, or machine-specific paths.
+
+PRIVATE WASPer_3DP.Performance MODULE (Phase 1, local only)
+=============================================================
+
+The private Performance project (05_WASPer_3DP.Performance, categories 8-9.3)
+builds its .gha straight into 01_WASPer_3DP\bin\<Configuration>\net8.0-windows,
+the same output folder as the public project (see BaseOutputPath in
+WASPer_3DP.Performance.csproj) - this also keeps Yak/release packaging simple,
+since everything it bundles lives in one folder. No second junction needed:
+the existing junction above already picks up WASPer_3DP.Performance.gha once
+you build it. Build WASPer_3DP.Private.sln (not the public WASPer_3DP.sln) to
+produce both assemblies at once.

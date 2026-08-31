@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- ✅ Build target and settings -->
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <OutputType>Library</OutputType>
+    <AssemblyName>WASPer_3DP.AI</AssemblyName>
+    <RootNamespace>WASPer_3DP.AI</RootNamespace>
+    <Deterministic>true</Deterministic>
+    <NoWarn>NU1701;NETSDK1086</NoWarn>
+    <Title>WASPer_3DP.AI</Title>
+    <Company>Juan Diego Vargas</Company>
+    <Description>Grasshopper inspection and controlled bridge support used by WASPer_3DP.</Description>
+  </PropertyGroup>
+
+  <!-- Rhino/Grasshopper SDK references are compile-time only and loaded by Rhino. -->
+  <ItemGroup>
+    <PackageReference Include="Grasshopper" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+    <PackageReference Include="RhinoCommon" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+  </ItemGroup>
+
+  <!-- UseWindowsForms omitted: GH SDK provides compatibility types transitively. -->
+
+</Project>

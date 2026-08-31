@@ -1,0 +1,875 @@
+WASPer_3DP v1.0.5
+Structure updated: 2026-08-01
+
+Grasshopper tabs:
+
+WASPer_3DP
+    - 0.0_WASPer_3DP
+    - 1.0_Utils
+    - 2.0_Geometry
+    - 2.1_Facades
+    - 2.2_Fields
+    - 2.3_Fields_3D
+    - 3.0_Slicing
+    - 3.1_Infills
+    - 4.0_Print Paths
+    - 4.1_Printability
+    - 5.0_Gcode
+    - 5.1_Robot Gcode
+
+WASPerformance
+    - 1.1_Data Vis
+    - 1.2_Studies
+    - 6_Grids of Points
+    - 7_Material Library
+    - 8_Morphology
+    - 9.0_BCs
+    - 9.1_Heat Transfer
+    - 9.2_Moisture_Buffering
+    - 9.3_Structural
+
+Subcategories and components:
+
+0.0_WASPer_3DP
+    - No canvas components; use the WASPet toolbar companion for examples,
+      plugin information, version, structure, social links, display controls,
+      and the interactive workflow map drawn in the active Rhino viewport. Its
+      Workflows node places grouped, pre-wired starter assemblies on the
+      Grasshopper cursor with the same pan/cancel/undo behavior as examples.
+
+1.0_Utils
+    - wsp_Ut01_Move Sliders
+    - wsp_Ut02_Round Number
+    - wsp_Ut03_Read CSV
+    - wsp_Ut04_Write CSV
+    - wsp_Ut05_Read JSON
+    - wsp_Ut06_Open URL
+    - wsp_Ut07_Write Excel to JSON
+    - wsp_Ut08_Cartesian Product
+    - wsp_Ut09_Entwine Reindex
+    - wsp_Ut10_Write CSV (Colibri)
+    - wsp_Ut11_Param Reader (Colibri)
+    - wsp_Ut12_Save View Image
+    - wsp_Ut13_Install Py Libs
+    - wsp_Ut14_Viewport Plane
+    - wsp_Ut15_Shade Mesh by Normals
+      Compact `M` input/output by default. Right-click commands independently expose Colors, Light
+      Direction, Ambient, Shade Strength, and Recompute Normals inputs; `Show all outputs` exposes
+      Normals and Info. Parameter visibility persists with the Grasshopper definition.
+    - wsp_Ut14_ChatGPT
+    - wsp_Ut15_GH AI Bridge
+
+1.1_Data Vis
+    - wsp_Da01_Scatter Plot
+    - wsp_Da02_Bar Chart
+    - wsp_Da03_Box Plot
+    - wsp_Da04_Histogram
+    - wsp_Da05_Heatmap
+    - wsp_Da06_Pareto Front
+    - wsp_Da07_3D Graph
+    - wsp_Da09_Marker + Line Params
+    - wsp_Da10_Chart Axis Params
+    - wsp_Da11_Chart Legend Params
+    - wsp_Da12_Chart Layout Params
+    - Shared chart foundation (`Components\Shared\Visualization\Charts`): host-neutral dataset,
+      variable, individual, point, and series contracts; reusable render options/results; screen-space
+      hit targets and nearest-target testing; and linked selection keyed by study individual ID.
+      Current Da rendering is unchanged until each renderer is migrated to this shared layer.
+
+1.2_Studies
+    - wsp_Sm01_WASPer Study Manager [primary]
+      Sources live under `Components\1.2_Studies\Sm01` as one partial component architecture. The
+      GH contract/controller, toolkit-independent Manager view contract, persistent Manager window,
+      seven functional tabs, Eto dialogs, canvas
+      attributes, study runner, state/persistence, captured assets, and exports are separated by
+      responsibility; the original component GUID is preserved for existing Grasshopper definitions.
+      Persistent study editor with Galapagos-style Number Slider links, scheduled Cartesian
+      iteration, global KPI capture, versioned study storage, CSV/XLSX/JSON export, and native PDF
+      reports with optional viewport snapshot, KPI summary, and iteration preview. Automatic samples
+      use every Grasshopper slider tick (0-7 integer domains yield 8 values); manually edited counts
+      remain fixed across later updates. Its inputs
+      are `wsp_path`, `kpi_sets`, `run_name`, optional `s_name`, and Gc03 `gcode`. The earlier
+      `file_path`, `reset`, and `write` sockets are removed; folder browsing and both file commands
+      live in the Export tab. Sm01 previews G-code by branch and
+      saves every iteration under the run-local Gcodes folder. A non-empty `s_name` overrides the Study-tab property
+      composer; otherwise its default creates `1_Di_3.1.3`-style names from iteration, short cell
+      name, and dot-grouped X/Y/Z counts, with selectable KPI/slider properties appended.
+      The Export tab displays the automatic project root
+      `<GH folder>\WASPer_<definition name>` (temporary `WASPer_3DP` root when unsaved).
+      Study data uses `Simulations\<run_name>`, with run-local `Gcodes`, `Snapshots`, `Reports`, and `XR` folders.
+      Slider iteration and final restoration are performed only through delayed document-solution
+      callbacks, preventing linked downstream objects from being expired during an active solution.
+      Tabs follow `KPIs`, `G-code`, `Export`, `Study`, `Dashboard`, `Process Viewer (XR)`, `Report`.
+      Process Viewer is a lightweight adapter over the current solved Gc03-enriched `wsp_path`:
+      it restores the Dashboard selection through the existing recompute workflow and writes a
+      revisioned external `.wasperxr` binary package to `Simulations\<run_name>\XR` by default,
+      without changing the study schema. The separate
+      vvvv application owns rendering and playback. The Dashboard reads
+      captured study iterations directly and renders live KPI-history and parameter-vs-KPI charts
+      with automatic selectors. Clicking a point highlights the same individual across both charts,
+      shows its details, and selects its captured-iteration row; Ctrl-click supports multi-selection.
+      The same tab also renders a Pearson correlation heatmap and normalized parallel coordinates;
+      clicking a parallel line participates in the shared individual selection.
+      Study and Dashboard share a persisted Study Library selector that scans
+      `<save path>\Simulations\*\study.json`. Historical selections are read-only and remain
+      viewable even when incompatible; schema, definition, slider identity/accuracy/domain,
+      duplicate mapping, and KPI availability checks gate explicit Load/Resume actions.
+      The persistent window is DPI-aware, restores DPI-tagged bounds inside the current monitor,
+      records its last normal bounds as a component option when closed, and uses 1400 x 800 logical
+      pixels for first-open definitions while respecting previously saved dimensions.
+      It wraps command/footer controls and scales dynamic KPI groups for different resolutions.
+      The KPI footer's Fabrication-units selector defaults to Auto and follows Gc03's packed
+      `wsp_path.KpiUnits`; mm/cm/m overrides convert values and units consistently through captured
+      iterations, Dashboard charts, data exports, and PDF reports.
+      Export uses `Study name` and `Save path`; `Write with run` is enabled and blue by default and
+      writes selected formats on completion, partial stop, or manual capture. Existing study names
+      open Cancel/Override/Serialize; serialization finds `_1`, `_2`, and later available suffixes.
+      The Study tab includes a timestamped activity console. `Run study` checks disabled KPI source
+      components first and shows an owned bullet-list Yes/No warning explaining that their KPIs
+      will be excluded; No is the default and cancels without changing the study.
+      Study CSV/XLSX exports use three header rows: KPI type, property name, and unit.
+      KPI boxes default to `wsp_path` plus `kpi_sets` first-occurrence order. Drag a box title to
+      persist a custom order across Manager, study/export, and report output; `Reset order`
+      restores the current input order without changing KPI selections.
+      A checkbox beside each box title enables/disables the complete KPI block while preserving
+      all small per-KPI selections for later restoration.
+      Shared KPI schema v2 records the exact issuing component instance GUID, component GUID, and
+      nickname. Every sourced box adds an independent `Run: <component nickname>` checkbox that
+      automatically locks/unlocks that producer without changing block or per-KPI selections.
+      Selecting Sm01 draws dotted blue arrows from the resolved KPI sources; Sm02 subsets retain
+      the original producer identity, and Sm03 identifies its own component instance. Slider,
+      KPI-source, and visualization arrows terminate at separate positions along Sm01's bottom
+      edge and approach from below so they do not obscure its ordinary input sockets.
+      Run controls occupy a dedicated header row above each KPI list. A persistent `Show values`
+      footer button expands every KPI with a second value/unit line. Sm01 also serializes the last
+      valid values per source instance, preserving disabled boxes, links, and values after restart.
+      Expanded lists synchronize their native item height and own their two-line renderer so the
+      value row survives native handle recreation and cannot be clipped;
+      cached values remain excluded from new study captures and exports until re-enabled.
+      Stable KPI structures update in place to prevent blank-window flashes. Source actions use a
+      pale-red `Disable` button when running and pale-green `Enable` when locked. A custom
+      double-buffered renderer keeps both labels visible across source-state changes.
+      The Export tab also stores an iteration-snapshot profile based on Ut12/legacy Ut10: enabled
+      by default, Rhino viewport, pixel width/height, DPI, and redraw wait, with a live bounded
+      frame preview and a complete 420-pixel settings pane from first opening. Its split layout is
+      pre-sized before applying panel minimums, preventing startup constraint errors. `Link vis component`
+      persists one selected component and draws a teal canvas arrow. The Export UI instructs users
+      to select one component on the Grasshopper canvas before clicking the link button. Any live
+      input/output data acts as the readiness gate, including custom preview data; the selected
+      viewport remains authoritative. Study schema v3 saves these settings and per-iteration
+      snapshot paths. Captures live in `Snapshots`, use matching G-code basenames when available or
+      the sample name without G-code, verify the PNG write, and persist a warning when capture fails;
+      CSV/XLSX add `Snapshot files`.
+    - wsp_Sm02_KPIs Subset
+      Applies one or more identifiers to one or more KPI sets using longest-list pairing. Sm01
+      displays repeated KPI types independently, for example `Thermal - Numerical (Dh)`, while
+      retaining the original KPI values, units, source metadata, and semantic source keys.
+    - wsp_Sm03_Custom KPIs
+      Creates a Sm01-compatible KPI set from a custom type name and paired lists of readable KPI
+      headers and numeric/text values. Missing headers are generated, duplicate names receive
+      unique internal keys, and the summary reports all pairing corrections.
+
+2.0_Geometry
+    - wsp_Ge01_Reduce Mesh Fast [tertiary]
+    - wsp_Ge02_Reduce Mesh [tertiary]
+    - wsp_Ge03_Tets Between Flat Meshes [tertiary]
+    - wsp_Ge04_Point Distance Checker [tertiary]
+    - wsp_Ge05_Project Points On Geometry [tertiary]
+    - wsp_Ge06_Project Curves On Geometry [tertiary]
+    - wsp_Ge07_Cull Duplicate Points [tertiary]
+    - wsp_Ge08_Solid from Surfaces [primary]
+    - wsp_Ge09_Solid from Mesh Caps [primary]
+    - wsp_Ge10_Efficient Bounding Box [primary]
+    - wsp_Ge11_Rebar Cavities [primary]
+    - wsp_Ge12_Rebar Cavities from Curves [primary]
+    - wsp_Ge13_Variable Curve Offset [primary]
+    - wsp_Ge14_Image to Bitmap [secondary]
+    - wsp_Ge15_Colored Mesh to Bitmap [secondary]
+    - wsp_Ge16_Bitmap to Colored Mesh [secondary]
+    - wsp_Ge17_Paint Mesh Field [secondary; shared painter implementation]
+    - Archive\wsp_Ge17_Paint Mesh Field_archive_20260731_pre_shared_painter [non-compiling previous implementation]
+    - Ge14 reads and caches image files without locking, resizes with optional
+      aspect preservation, and preserves alpha during grayscale conversion.
+      Ge15 rasterizes interpolated mesh vertex colors through a reference plane;
+      projection misses retain bg_color. Ge16 creates a World-XY colored quad
+      mesh with boundary-preserving step downsampling. Ge15 and Ge16 consistently
+      map image top to positive plane/mesh Y for non-flipped round trips.
+    - Ge17 interactively paints a reusable scalar value per mesh vertex. Hovering
+      only previews the brush; valid left-click/drag strokes modify values and
+      commit on release. Paint, baseline Erase, Undo, and Clear canvas controls
+      use one plugin-wide mouse session, and Save Bitmap writes a manual atlas
+      snapshot. State is compressed into the GH file and mirrored to
+      `WASPer_<definition>\MeshPaint` sidecar/PNG files by default.
+    - Ge17 reuses the shared Pp14 painter window, brush kernel, masks, texture
+      stack, display, and persistence. It paints signed values on mesh vertices,
+      uses existing texture coordinates or an LSCM unwrap for its atlas, and
+      outputs one normal-displaced `paint_mesh` plus a summary. Optional seam
+      curves are pulled to the mesh and resolved to connected topology-edge
+      cuts before unwrapping. Cut vertices remain linked to their original paint
+      values, and matching seam/quarter reference colors appear in the atlas and
+      Rhino preview. Optional ordered `edges` curves replace atlas-X references
+      with seam-aligned topology rows. The atlas brush is simultaneously shown
+      on the corresponding deformed Rhino preview vertex. `Update Mesh` captures
+      that working field into the original-location `paint_mesh` output, allowing
+      `move_prev` to remain a separate live editing twin.
+
+2.1_Facades
+    - wsp_Fa03_Facade Panelling
+    - wsp_Fa04_SurfacePanelsFromUV
+    - wsp_Fa05_Finger Joints (SDF)
+    - wsp_Fa06_Random Weighted Tile Panelizer
+
+2.2_Fields
+    - wsp_Fi01_Distance Field 2D
+    - wsp_Fi02_Field Booleans
+    - wsp_Fi03_Blend Fields
+    - wsp_Fi04_Fields to Frames
+    - wsp_Fi05_Contours From Fields
+    - wsp_Fi06_3D Field from 2D Fields
+    - wsp_Fi07_Deconstruct Field
+    - wsp_Fi08_Infill Layers to Fields
+
+2.3_Fields_3D
+    - wsp_Fi3d01_Field from Solid
+    - wsp_Fi3d02_Mesh from Field
+    - wsp_Fi3d03_Shell from Field
+    - wsp_Fi3d04_Field 3D Booleans
+    - wsp_Fi3d05_Transform Field
+    - wsp_Fi3d06_Invert Field
+    - wsp_Fi3d07_Offset Field
+    - wsp_Fi3d08_Field History
+    - wsp_Fi3d10_Isopod to WASPer Field [primary; optional live Isopod bridge; domain box required; optional zero iso-surface mesh]
+    - wsp_Fi3d11_WASPer to Isopod Field [primary; optional live Isopod bridge; Isopod required at runtime]
+    - wsp_Fi3d12_WASPer Ghost Field [primary; multi-field sampled R32F GPU preview; automatic distinct colors; color/opacity list matching; optional zero-level meshes]
+    - wsp_Fi3d13_Field from WASPer Path [primary; packed path to unified superellipse bead field; role filtering; optional single thermal mesh]
+
+3.0_Slicing
+    - wsp_Sl01_Slicer [primary; optional supplied la_planes reuse a previous slicer's layer tree for compatible slicing]
+    - wsp_Sl02_SlicerPlus v3 [primary; role metadata; transactional closed-Shell direction and layer-plane seam normalization with original-curve fallback]
+    - wsp_Sl03_Re-Trim Printing Paths v2 [primary; optional first full_path reference with explicit role overrides and preserved non-trimmed roles]
+    - wsp_Sl04_Trim Printing Paths [secondary]
+    - wsp_Sl05_Trim Paths with Field
+    - wsp_Sl06_Orient Printing Paths
+    - wsp_Sl07_Visualize Printing Path
+    - wsp_Sl08_Assign Curve Roles [secondary; duplicates external curve trees and assigns explicit Undefined/Shell/Infill/Partition/Support roles]
+
+3.1_Infills
+    - wsp_In01_S Infill 2D — tertiary; S-pattern infill from untagged boundary trees or metadata-aware layer replacement; `la_index`; independent rotation/distance/clear lists; outputs role-preserving `full_path` first, generated Infill-tagged curves second
+    - wsp_In02_Spiral Infill 2D — tertiary; spiral infill from untagged boundary trees or metadata-aware layer replacement; `la_index`; independent rotation/distance/clear lists; outputs role-preserving `full_path` first, generated Infill-tagged curves second
+    - wsp_In08_Volumetric Infill (From Box) [primary; TPMS / Polyhedral / Brick-like; `in_kpis`]
+    - wsp_In09_Volumetric Multi-Infill (From Surfaces) [primary; consecutive surface-pair domains; `in_kpis`]
+    - wsp_In10_Layered Multi-Infill (From Curves) [primary; TPMS / 2D / Turtle; supplied Open/Open curve pieces are preserved with endpoint-direction alignment, Closed/Closed seams are aligned, and direct Open/Closed pairs trim only the closed guide to its matching arc; cross-layer topology changes disable the Guide Editor but do not remap geometry or TPMS phase; topology-aware shell closure; geometric planar guide/partition/end clearances; embedded WASPer.PathRole metadata; `in_kpis`]
+      Implementation is organized as a partial class: the component/solver contract remains in
+      the main source, with pattern generation, shell generation, domain geometry, and editor-host
+      logic in `3.1_Infills\In10`.
+      In08-In10 KPI sets report full/short cell names, X/Y/Z counts and dimensions, and
+      multi-domain count. Sm01 orders the `Infill` group first in its KPI Manager.
+    - wsp_In11_TPMS Infill Params (Layered / Volumetric) [primary]
+    - wsp_In12_2D Infill Params (Layered) [secondary; Square S / Sticks / Triangle / Sine]
+    - wsp_In13_Turtle Infill Params (Layered) [secondary]
+    - wsp_In14_Polyhedral Infill Params (Volumetric) [secondary]
+    - wsp_In15_Brick-like Infill Params (Volumetric) [secondary]
+    - Legacy\wsp_In08_TPMS Box Array SDF_v2 [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In09_TPMS from surfaces SDF_v2 [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In11_Polyhedral Box Array SDF [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In12_Polyhedral Array from Surfaces SDF [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In13_Brick-like Box Array SDF [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In14_Turtle Cells [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In15_TPMS from Slices [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In16_Multi-Infill 2D [hidden compatibility; original GUID preserved]
+    - Legacy\wsp_In17_Multi-Infill 3D [hidden compatibility; original GUID preserved]
+
+4.0_Print Paths
+    - wsp_Pp01_Path from Curves v3 [primary; original Pp01 GUID preserved; Shell Seam Editor]
+    - wsp_Pp02_Path Translator [primary; exact wsp_path <-> polyline gate; no resampling;
+      trim_tree=true groups curves/roles into one branch per logical layer]
+    - wsp_Pp03_Printing Path Optimizer [primary]
+    - wsp_Pp04_Visualize Print Path [primary]
+    - wsp_Pp05_Define Flow [secondary]
+    - wsp_Pp06_Align Path Planes [secondary]
+    - wsp_Pp07_Reduce Path Points [secondary]
+    - wsp_Pp08_Speed from Curvature [secondary]
+    - wsp_Pp09_Morph Path Between Surfaces [secondary]
+    - wsp_Pp10_Continuous Print Path [secondary; per-layer or full-3D continuity; spring icon]
+    - wsp_Pp11_Fuzzy Skin from Pattern [secondary]
+    - wsp_Pp12_Fuzzy Skin from Texture [secondary]
+    - wsp_Pp13_Fuzzy Pockets from Points [secondary]
+    - wsp_Pp14_Fuzzy Skin from Paint [secondary; movable 3D twin plus persistent signed 2D atlas painter]
+    - wsp_Pp15_Assign Print Path Roles [tertiary; edits roles inside an existing wsp_path]
+    - wsp_Pp16_Flow from Proximity [tertiary]
+    - wsp_Pp17_Color Mesh with Path Values [tertiary]
+    - wsp_Pp18_Ghost Path [tertiary]
+    - wsp_Pp19_Trim Paths with Fields [secondary; SDF-union field list; shared
+      target_roles selector; optional close_shell pairs open Shell pieces from
+      different source curves per layer, self-closes unpaired fallbacks, and locally
+      re-constrains Infill only at all newly added bridge segments]
+    - wsp_Pp20_Construct WASPer Path [tertiary; original constructor GUID preserved]
+
+5.0_Gcode
+    - wsp_Gc01_LDM 3DP Parameters [primary]
+    - wsp_Gc02_FDM 3DP Parameters [primary]
+    - wsp_Gc03_Marlin Gcode v2 [primary]
+    - wsp_Gc04_Save Gcode [primary]
+    - wsp_Gc05_WASPer Simulation [primary]
+    - wsp_Gc06_WASPer Path from Gcode [tertiary]
+    - wsp_Gc07_Export XR Package [primary; live geo pass-through + printed/pending split + compact binary schema 0.2.0 export]
+
+XR process-viewer export
+    - Gc07 writes one atomically replaced `.wasperxr` binary package for desktop
+      vvvv/VL.Stride playback and later OpenXR viewing. Its generic `geo` input is
+      passed through as output zero for VLinkSend and is intentionally excluded from
+      the JSON package. It exports complete path branches and point-plane orientation, roles, stroke IDs,
+      available process/printability fields, units, bounds, KPIs, and cumulative
+      start/end timing for every Gc03 print, travel, and Z-hop motion. Its normalized
+      `sim_par` input produces printed and pending curve outputs and serializes the same
+      role-aware split under `payload.simulation`; a partial input path raises a warning.
+      `payload.meshes` remains an empty compatibility field, so standalone playback shows
+      the fabrication path while VL.Rhino supplies heavy reference geometry in live-link mode.
+    - The initial MoM workflow is predicted-process visualization only. Cerebro,
+      live robot feedback, physical registration, and as-built sensing are deferred.
+
+Packed-path common debug-output contract
+    - Every active component that produces or modifies a `wsp_path` uses the same
+      persistent right-click `Show all outputs` core block, in this exact order:
+      `pt_planes`, `la_planes`, `flows`, `layer_h`, `layer_w`, `layer_wf`,
+      `print_speed`, `print_vol`, `path_role`, `stroke_id`. Values always describe the outgoing `wsp_path`;
+      unavailable optional fields stay empty, and points are represented only by
+      plane origins.
+    - Component-specific diagnostics follow the common block. Existing fixed
+      outputs remain ahead of it: Gc03 keeps wsp_path/gcode/p_planes/t_planes,
+      Pp04 keeps its visualization outputs, Gc06 keeps
+      wsp_path/p_path/travels/summary, and Gc05 keeps its simulation/job-KPI
+      outputs. Gc03 and Pp04 omit the duplicate core `pt_planes` socket because
+      each already has a fixed plane output.
+    - The contract is used throughout the Pp workflow and by Gc03, Gc05, and
+      Gc06. Pr05 remains the dedicated category-based KPI inspector.
+
+4.1_Printability
+    - wsp_Pr01_Printability Assessment v2 [packed-path interface; new GUID]
+    - Legacy\wsp_Pr01_Printability Assessment (Points)_legacy [hidden compatibility; original Pr01/Gc11 GUID preserved]
+    - wsp_Pr02_3DCP Velocity [legacy GUID preserved]
+    - wsp_Pr03_Fresh Deformation Risk
+    - wsp_Pr04_Beam Deflection Proxy [local analytical shape + global collapse flags]
+    - wsp_Pr05_Deconstruct Path KPIs [moved from the former Gcode panel; GUID preserved]
+
+Printability archive (excluded from compilation and normal project visibility)
+    - Components\4.1_Printability\Archive\wsp_Pr01_Printability Assessment (Points)_archive_20260716_pre_support_identity.cs
+    - Components\4.1_Printability\Archive\wsp_Pr04_Beam Deflection Proxy_archive_20260716_pre_def_wsp_path.cs
+
+Packed G-code path workflow
+    - Sl02 SlicerPlus v3 keeps the existing Curve outputs and adds hidden
+      `WASPer.PathRole` metadata to every final curve: Shell, Infill, or
+      Partition. This also applies to `full_path`, including its default
+      collapsed `{layer}` tree. Closed Shells are automatically direction-
+      normalized and align their seams to the first valid Shell through the
+      corresponding layer planes; open fragments remain unchanged.
+    - WasperFlowParams packs a flow assignment strategy from Pp05_Define Flow.
+      Pp01_v3 accepts a list of `flow_p` strategies and evaluates the one assigned
+      to each curve's role after subdivision. A strategy may target several roles,
+      but no role may occur in more than one strategy; All (0) conflicts with every
+      additional strategy. Unassigned roles remain at neutral flow 1.0. If
+      `flow_p` is omitted, Pp01_v3 defaults to flow = 1 for every role.
+    - WasperPrintPath packs canonical pt_planes, flows, layer_h, nominal LayerW,
+      flow-adjusted LayerWf, per-segment PrintVol, and optional branch-aligned
+      PathRoles into one wire. It also optionally stores one authoritative
+      supplied `LayerPlane` per logical layer. Canonical layer-plane paths end
+      at the logical-layer dimension and missing layers stay absent. This stage
+      does not invent fitted/reconstructed planes; the schema leaves that future
+      provenance distinct from supplied frames. Path role codes are 0 Undefined, 1 Shell,
+      2 Infill, 3 Partition, and 4 Support. Each plane
+      origin is the path location. The compatibility `Points` property is derived
+      from those origins so point and plane geometry cannot diverge; legacy
+      point-only paths are converted to World-XY planes. Its native cached wire
+      preview uses the persistent WASPet palette and line thickness; its default
+      is WASPer blue, with Classic, Vivid, neutral, single-color, and custom-role
+      alternatives. Grasshopper's green selected-object highlight remains
+      authoritative. When `role_colors` is empty, Pp04 and Sl07 also use WASPet;
+      a connected local color input overrides the global palette.
+    - Pp01 Path from Curves v3 is the clean toolbar component. It preserves the
+      previous component GUID and complete input/output layout, so existing saved
+      definitions receive the update without rewiring. It accepts `p_path`,
+      optional list `flow_p`, `seg_len`, optional `ref_plane`, and
+      optional `layer_w`, followed by appended `plane_mode`; it outputs `wsp_path`
+      first and `summary` second. Right-click
+      `Show all outputs` exposes the common outgoing-path debug block. The
+      `path_role` tree is initially read from source-curve metadata. Shell curves
+      carrying `WASPer.ShellSeam` are rebuilt from their canonical pre-seam loop,
+      exposed through a persistent layer-scoped Shell Seam Editor, and stored with
+      the updated metadata in `wsp_path.SourceCurves`. The pre-editor Pp01 source is
+      archived and excluded from compilation. The original Pp01 remains
+      compiled for existing definitions in `Components\5.0_Gcode\Legacy` but is
+      hidden from the toolbar.
+      Valid supplied `la_planes` are stored as authoritative layer reference
+      frames on the outgoing wsp_path; an unavailable layer is left absent.
+      `plane_mode=0` preserves automatic/multi-axis fitted and local point-below
+      directions. `plane_mode=1` fixes both pt_plane Z and layer-height searches
+      to `ref_plane.ZAxis` (World Z by default). Supplied `la_planes` are audited
+      against fitted geometry and final frames; consolidated warnings report
+      non-planarity, p95/max angular mismatch, invalid/missing planes, reversed
+      normals, and fixed-axis tangent degeneracy. Per-layer details stay in
+      `summary`.
+      Automatic mode also classifies individual curve planarity. Planar curves
+      keep a stable curve-plane normal inside aggregate non-planar layers.
+      Rotated planar Infill pairs from In01/In02 use same-arclength matching only
+      when their tangent and sampled transverse drift remain compatible;
+      incompatible pairs use closest previous-layer height projected along the
+      stable normal and produce a grey notice rather than a local-registration
+      failure warning.
+      Curves without WASPer.PathRole metadata are explicitly stored as
+      Undefined and produce a grey notice: general All/Undefined operations
+      remain valid, while Sl08 Assign Curve Roles is recommended before Pp01 when semantic roles
+      are already known and Pp15 Assign Print Path Roles can assign them afterward.
+      Performance uses native batch equal-arclength subdivision, one cumulative-
+      length cache per sampled curve, binary correspondence lookup, lazy spatial
+      fallback, full curve bounding boxes in the previous-layer RTree, and
+      branch-batched DataTree writes. Summary timings separate layer analysis,
+      subdivision/flow, height evaluation, and packing and report direct versus
+      spatial-fallback height matches.
+    - Pp03, Pp16, Pp07, and Pp08 now use the same packed path spine: `wsp_path`
+      is input 0 and output 0, with `summary` as output 1. Former point/plane/flow/
+      layer_h tree inputs are read from `wsp_path`; right-click `Show all outputs`
+      exposes canonical plane trees and component-specific aligned diagnostics,
+      without redundant point-tree outputs. Their
+      previous versions remain compiled and hidden in `Components\5.0_Gcode\Legacy`,
+      together with hidden Pp01 v1 and Pp04 v1.
+    - Pp03-Pp08 append flattened `target_roles` / `roles` lists: 0 All paths
+      (default), 1 Shell, 2 Infill, 3 Partition, 4 Support, 5 Transition,
+      6 Undefined. Several role-specific values may
+      be selected together, excluding the others; All paths (0) cannot be
+      combined. Selection operates per complete path branch. Undefined/legacy
+      branches match All or explicit Undefined (6). Pp03 preserves non-target
+      curve slots/order, Pp16 preserves their flows, Pp07 preserves all their
+      points, and Pp08 preserves existing non-target speeds or leaves them unset.
+      Pp03, Pp05-Pp12, Pp14, and Pp16 share a checkable `Select path roles`
+      submenu on the `roles` input. Its persistent multi-selection is used when
+      no source is connected; connected integer/list sources remain authoritative.
+    - Pp10 Continuous Print Path reorders and reverses targeted path branches into
+      best-effort extrusion strokes. Per-layer mode keeps layers independent;
+      Full-3D mode may connect consecutive layers and turns compatible closed,
+      one-Shell-per-layer stacks into distributed-rise spring paths. Each accepted
+      Shell stack is concatenated into one actual `wsp_path` branch instead of
+      remaining as visually touching layer branches; duplicate seam points are
+      omitted while aligned plane and process data are retained. Deposited
+      connectors are stored as the explicit Transition role (5), while original
+      Shell/Infill/Partition/Support/Undefined identities remain unchanged.
+      Branch-aligned `stroke_id` metadata instructs Gc03 to omit travel and Z-hop
+      only across coincident consecutive branches of the same stroke. `link_dist`
+      bounds connectors. `max_slope` derives ramp length, so shallow slopes use
+      more of the loop and steep slopes use less. The complete first layer stays
+      planar; spiralized `layer_h` is recalculated against the actual preceding
+      output loop and available `print_vol` values are refreshed. The icon is a spring.
+      Mode 2 (Shell + 2D Infill) orders each eligible layer as Shell arc -> reversed
+      Infill chain -> complementary Shell arc using two natural closest-point seams.
+      `tail_l` is a matched projected trim length, not an overlap or fillet distance:
+      both the participating Shell end and corresponding Infill end are shortened by
+      the same amount, then their new endpoints are joined by one straight branch with
+      role Transition. Trimmed endpoints interpolate their source fabrication metadata;
+      the Transition interpolates between both sides and PrintVol is recalculated from
+      the assembled geometry. The existing forced double-seam ordering and stroke
+      continuity remain authoritative. `seam_pts` reports original seams A/B followed
+      by Shell A_t, Infill A_t, Shell B_t, and Infill B_t for visual verification.
+      Mode 2 keeps these completed paths independent per layer. Mode 3 retains the
+      first eligible layer in Mode 2 order. Later eligible layers are reordered as
+      Infill -> Infill-to-Shell Transition -> Shell segment 2 -> reversed Shell
+      segment 1; the Infill direction is unchanged. The final Shell point of layer
+      Ln is joined directly to the first Infill point of layer Ln+1. These links
+      retain interpolated process metadata, are never cancelled by `link_dist` or
+      `max_slope`, and are never added after the final layer. Distance and slope
+      exceedances remain explicit diagnostics.
+      Its explicit lightweight wire preview follows WASPet's global wsp_path
+      enable, thickness, selection highlight, and semantic-role palette settings.
+      Pp10, Pp04, and Gc03 warn when a continuous Shell spans layers while
+      Infill, Partition, Support, or Undefined paths remain separate: users must
+      inspect intersections, protrusions, lost support, and nozzle-collision risk.
+      Pp10 stores the condition explicitly as `HasCrossLayerShellContinuity`, so
+      intervening interior branches cannot hide it by splitting Shell stroke IDs.
+      Gc03 reports this mixed-strategy condition but does not block generation.
+    - Gc03 Marlin Gcode v2 follows the same packed path spine: output 0 is
+      `wsp_path`, output 1 is `gcode`, fixed output 2 is `p_planes`, fixed output 3
+      is `t_planes`, and right-click `Show all outputs` exposes the common core
+      block (without duplicate `pt_planes`) followed by `p_speed`, `p_time_min`,
+      `path_length`, `p_vol`, optional `p_mass`, and `layers`. `p_mass` is in kg,
+      follows volume in the KPI order, and is calculated only when Gc01/Gc02
+      received a valid connected WASPer Material density.
+      `t_planes` are generated from the Gc03 motion plan as `{layer; travel_index}`
+      branches, including Z-hop moves. Its `kpi_units` input affects only
+      Gc03/Pr05/Gc05 KPI reporting
+      (`0=mm`, `1=cm`, `2=m`, default `0`) and never rescales generated G-code
+      coordinates or feedrates, which remain machine mm/mm-min. The prior Gc03
+      remains compiled and hidden in `Components\5.0_Gcode\Legacy`. Gc03 warns
+      when the input path is marked `IsPartial` and preserves that flag on its
+      output path. LDM file splitting groups complete logical layers using the
+      first varying path index after any common tree prefix, so grafted paths such
+      as `{0; layer; curve}` split by `layer` correctly. LDM volume reporting and
+      splitting use the same raw geometric segment-volume basis, with no hidden
+      `seg_vol * 1.15` multiplier.
+    - Pp01 Path from Curves accepts an optional `ref_plane` input. When supplied,
+      it replaces World XY as the first-layer layer_h datum, base/reference-plane
+      safety check, and final stacking-direction fallback. It also accepts an
+      optional appended `layer_w` input. If omitted, layer_w defaults to layer_h * 2.5.
+      Pp01 stores nominal LayerW and computes LayerWf/PrintVol immediately.
+    - The path carries nominal layer_w, flow-adjusted layer_wf, machine print_speed,
+      per-segment print_vol, nozzle_diam, printability assessment, fresh-risk,
+      deflection data, and Gc03 v2 KPI fields. Pp20 constructs/editable base fields
+      explicitly; Gc03 v2 appends KPI-facing process trees (`p_speed`, `seg_len`,
+      `p_vol`) and scalar job totals (`p_time_min`, `path_length`, `p_vol`, optional
+      `p_mass` in kg, `layers`).
+      WasperPrintPath also carries `IsPartial`, used by Pp04 simulation slices and
+      Gc06 G-code reconstruction to flag paths that should not be mistaken for the
+      full original print.
+    - Sl07 and Pp04 provide persistent right-click Visible roles submenus for
+      Shell, Infill, Partition, Support, and Undefined. All roles are visible by default.
+      When a role is disabled, every component output excludes it and an orange
+      warning lists the hidden roles. Pp04 evaluates simulation progress on the
+      complete print sequence before applying this output filter.
+    - Pp02 is a strict non-resampling translator. `wsp_path` emits one polyline per
+      PtPlanes branch with role metadata and an exact in-session round-trip snapshot;
+      `crvs_path` accepts polylines only. Unchanged translator curves restore the full
+      original path, same-topology edits retain fabrication metadata while clearing
+      stale analysis/KPI fields, and new polylines create a partial path. Use Pp01 for
+      smooth curves, subdivision, or full flow/layer-height analysis. Its default
+      `trim_tree=true` groups canonical curve branches into aligned curve/role items on
+      `{layer}` (or `{prefix;layer}`) and expands those items back when packing.
+    - Pp20 constructs or edits a packed path from optional input 0 `wsp_path`,
+      which is always visible. Optional override sockets for pt_planes,
+      la_planes, flows, layer_h, layer_w, nozzle_diam, and print_speed are shown/hidden from
+      the right-click menu and persist with the Grasshopper file. Disconnected or
+      hidden inputs preserve the reference path fields; connected inputs override
+      them. Without a reference path, pt_planes must be supplied and their
+      origins define the path locations. Flows default to 1.0 only when no
+      path/input flows exist; layer_w preserves path LayerW or defaults to
+      layer_h * 2.5. Scalar, branch-scalar, and matching tree inputs are accepted
+      where documented.
+    - Pp20, Pp04, Gc03, and Pr01 resolve explicit connected layer_w/nozzle inputs as overrides of
+      matching packed values; user-visible override notes use Remark-level messages
+      where the component exposes them.
+    - Pr01 v2 reads canonical pt_planes, derived path locations, flows, and layer_h only from `wsp_path`.
+      The legacy public process-tree inputs and `red_viz` sampling input were removed.
+      Its diagnostic outputs are full resolution and its output `wsp_path` carries the
+      resolved print_loc, print_glob, support_pts, support_vects, angles, contact_widths,
+      LayerW, LayerWf, PrintVol, and optional NozzleDiam.
+    - layer_w is the nominal/base width; layer_wf is the effective deposited width
+      computed with the same stadium-section flow-adjusted bead-area logic used by
+      Pp04 Visualize Path v2. print_vol is calculated from segment length, layer_wf,
+      and layer_h, with the first point in each branch set to zero.
+    - Pr05 Deconstruct Path KPIs is the per-point/per-segment KPI inspector. It keeps
+      fixed outputs `wsp_path`, `pt_planes`, and `summary`, then dynamically appends
+      tree-shaped KPI fields present in the input wsp_path. Categories are
+      `Process KPIs` (`flows`, `layer_h`, `layer_w`, `layer_wf`, `p_speed`,
+      `seg_len`, `p_vol`), `Pr01 Printability`, `Pr03 Fresh Risk`,
+      `Pr04 Deformation`, and `Pr04 Failure State`. Right-click
+      category toggles and `Show all KPI outputs` expose KPI sockets while preserving
+      fixed-output wires. Global job totals stay with Gc03/Gc05, not Pr05.
+    - Gc05 WASPer Simulation appends Gc03 job KPI outputs (`p_time_min`,
+      `path_length`, `p_vol`, optional `p_mass`, `layers`, `kpi_units`) after its simulation outputs,
+      so generated G-code can be reviewed as geometry in Pp04 and as scalar job KPIs
+      in Gc05. Its `wsp_path` output is the deposited current-state prefix, includes
+      the active print segment endpoint and matching point metadata, and carries
+      `IsPartial=true`. Pp04 recognizes this flag and ignores any accompanying
+      `sim_path` input so an already-trimmed Gc05 path is not cut twice.
+      Only `printer_meshes`, `wsp_path`, and `sim_path` are fixed and visible by
+      default. Persistent right-click `Show all outputs` appends `nozzle_plane`,
+      `motion`, `index`, `progress`, `seconds`, the job KPI block above, and then
+      the standardized outgoing-path debug block. Optional values are resolved by
+      nickname; the three fixed sockets retain their wires across layout toggles.
+    - Pp06 Align Path Planes is an automatic packed-path alignment step intended
+      directly after Pp01 for shells and well-stacked paths. It is not recommended
+      for complex topology-changing TPMS infills; a warning is emitted when many
+      split/merge correspondences are detected. Stable stacks propagate the
+      already-aligned previous layer. Pp01 stores one exact source curve
+      per path branch in wsp_path; Pp06 evaluates every new plane origin on that
+      curve instead of shortcutting the incoming plane polyline. Branch paths
+      remain unchanged; confident one-to-one
+      stacks recursively inherit the aligned item count from the layer below,
+      adding/removing locations as needed. Count matching requires a mutual
+      one-to-one correspondence; topology-sensitive regions keep their original
+      counts. Legacy paths without source curves use polyline-only sliding
+      and cannot add/remove locations.
+      `strength` blends the safe adjustment and optional `max_shift` limits travel
+      in model units; when omitted, the limit is approximately one local segment.
+      layer_h, LayerW, and print_speed are interpolated at the new stations.
+      Flow is remapped as a segment field
+      using new-segment midpoints, preserving the first-item zero and closing-segment
+      seam conventions; LayerWf is then recomputed with the Pp01 bead-area relation
+      and PrintVol is rebuilt. Minimum/maximum arc-length gaps prevent point accumulation
+      and oversized approximation spans. If geometry changes, stale printability,
+      deformation, motion-plan, and KPI fields are cleared with a warning.
+      Fixed outputs are wsp_path and summary. The persistent right-click
+      Show all outputs option reveals the complete common outgoing-path debug
+      block while preserving connections on both fixed outputs.
+      Its appended `target_roles` list uses the shared 0/1/2/3/4/5 selector and limits
+      correspondence/count changes to matching branches. Multi-role matching
+      stays within each semantic role. Non-target core point
+      fields pass through unchanged, and role-specific matching does not jump
+      across a logical layer where that role is absent.
+    - Pp11 Fuzzy Skin from Pattern moves pt_plane origins laterally without changing their
+      orientation. Its repeating per-branch `pt_pattern` maps 0 to local tan + 90
+      degrees (`plane.ZAxis x tangent`) with `mag_0`, and 1 to tan - 90 degrees
+      with `mag_1`. Both profiles accept signed finite values: positive follows
+      the pattern direction and negative reverses it. Each magnitude accepts one constant value. Without pull
+      geometry, multi-value lists repeat independently over ordered logical
+      layers; with pull geometry they become interpolated proximity profiles.
+      Optional `pull_geo` accepts points, lines, open/closed curves,
+      surfaces, meshes, Breps, and Extrusions. One positive `pull_dist` broadcasts,
+      matching counts pair item by item, and other list lengths repeat with a grey
+      notice; its default is 10 model units. The closest normalized result
+      (`distance / pull_dist`) samples the profile from u=0 to u=1.
+      `la_pattern` repeats over ordered logical layers and `target_roles` uses
+      0 All / 1 Shell / 2 Infill / 3 Partition / 4 Support / 5 Undefined, defaulting to Shell (1).
+      Optional `mask` and `invert`
+      remain the final inputs; closed planar curves, solid
+      Breps/Extrusions, and closed meshes are supported as a union. Closed paths
+      use cyclic tangents. Point-matched process fields remain aligned, exact
+      source curves are rebuilt from the result, and stale volume/analysis/
+      motion/KPI fields are cleared. Large relative absolute magnitudes warn but are not
+      silently clamped.
+      A persistent, default-on right-click `Constrain infill to modified Shell`
+      option detects changed Shell points/adjacent segments and clips only
+      planar/tilted-planar Infill branches whose bounds touch those local swept
+      zones. Before/after admissible regions are compared, so only Infill that
+      was valid before and became invalid after Shell movement is removed;
+      unaffected and pre-existing conditions pass through. It derives centerline clearance from half the
+      Shell plus half the Infill layer_wf, falling back to the Shell centerline
+      when a valid clearance offset cannot be built. New boundary locations
+      interpolate planes and the retained flow/layer_h/print_speed/layer_w/
+      layer_wf fields. Fully removed fragments disappear; separate retained
+      pieces receive separate branches. Layers without a reliable matching
+      closed planar Shell pass through unchanged with a warning.
+    - Pp12 Fuzzy Skin from Texture maps bitmap or colored-mesh luminance into a
+      signed mag_domain and uses pt_pattern to choose local tan +90/-90 lateral
+      direction. A single number x is interpreted as 0 to x, including negative
+      x. Bitmap X follows normalized arclength per branch and bitmap Y follows
+      logical layers from image bottom to top; closed paths wrap horizontally.
+      Colored meshes interpolate vertex color at the closest mesh point and fade
+      to zero at ref_dist. It retains Pp11's la_pattern, multi-role targeting,
+      mask, invert, packed-path preservation, provenance rebuilding, and stale
+      downstream-field clearing behavior. Its unwired target role also defaults
+      to Shell (1). It shares Pp11's persistent, default-on planar Infill
+      constraint and its clearance/remapping behavior.
+    - Pp13 Fuzzy Pockets from Points projects each pocket_pts item to its nearest
+      valid closed planar Shell branch and restricts the pocket to the same
+      logical Shell stack. rad_h is a positive list controlling cyclic distance
+      along each closed Shell; rad_v is an optional positive list controlling
+      distance through the local layer stack and defaults point-by-point to
+      rad_h. One value broadcasts, matching counts pair one-to-one with
+      pocket_pts, and other non-empty counts repeat with a grey notice. depth
+      and half_pocket use the same list mapping. depth is signed: positive moves
+      the Shell outward, negative moves it inward, and zero makes no movement.
+      Full pockets apply a smooth elliptical cosine deformation; overlapping
+      pockets preserve the
+      signed influence with the greatest absolute displacement rather than
+      accumulating. A half_pocket affects only its anchor layer and lower
+      logical layers, treating the projected point as the upper opening centre.
+      This is an experimental upper-open cavity profile, not a guarantee of
+      watertightness, minimum wall thickness, or acceptable overhang.
+      Inward direction is classified from same-layer Infill relative to the
+      closed Shell, with curve-interior fallback when no Infill is available.
+      Pp13 preserves core point-matched process fields, rebuilds source curves,
+      clears stale geometry-derived fields, and shares the persistent default-on
+      local Infill-to-Shell constraint used by Pp11/Pp12. GUID:
+      7BBB8E81-7F65-4955-A4AA-19899AA9E30D.
+      Pp11, Pp12, and Pp13 share a persistent right-click `Show all outputs`
+      option. Their fixed `wsp_path` and `summary` outputs retain downstream
+      wires while the optional diagnostic block follows the common core contract.
+    - Pp14 Fuzzy Skin from Paint treats role-filtered path-plane origins as the
+      texture samples themselves. It requires no bitmap or proxy mesh. Persistent
+      implementation helpers are organized beside the component under
+      `Components\4.0_Print Paths\Pp14_Painting`: paint engine, atlas, popup UI,
+      and consolidated
+      support code for persistence, types, and Rhino/Grasshopper interaction.
+      The root Pp14 partial source retains
+      only component registration, menus, outputs, and solve orchestration.
+      Its optional trailing `texture` input accepts image paths, Image/Bitmap
+      objects, and vertex-colored meshes. The Painter automatically shows the
+      source as a translucent overlay with Show/Hide, Edit, Fit Texture, Apply,
+      Distort, and Remove controls. Edit uniformly scales and preserves the
+      current quad; Distort provides four independent corners with bilinear
+      warping. Flip Map reverses texture mapping horizontally along atlas X.
+      Apply maps
+      luminance through the ordered magnitude domain and is undoable.
+      painter-window controls arm Pull, Push, Smooth, and Erase brushes; Undo and
+      Redo icon buttons and Clear edit the stored field. Beneath `Open Painter`,
+      `Update Mesh` manually refreshes the fixed second `shell_mesh` output;
+      `summary` is third. The mesh is generated directly through the current
+      paint-displaced Shell points, persists with the GH document, and never
+      updates during ordinary painting. Painter Preview independently shows/hides a lightweight
+      false-color 3D Shell twin, offset outside the deposited path and translated
+      by optional move_prev. The twin is display-only; brush input is accepted
+      exclusively by the separate flat 2D atlas in Open Painter.
+      Every logical stack becomes a separate atlas tile. Rows retain actual circumferential
+      arc length; corresponding 3D points determine inter-layer spacing, and
+      tangential drift is represented as atlas shear. Closed stacks are seam-cut,
+      capped at 256 samples per row, and paint wraps across both seam edges.
+      Red seam boundaries, quarter-section guides, and sampled layer lines orient
+      the user. Matching longitudinal guides remain offset over the original 3D
+      Shell independently of Preview. Hovering over the popup painter displays a
+      tool-colored brush-radius marker at the corresponding original Shell location.
+      `Open Painter` provides a modeless locked top-view atlas with wheel zoom,
+      pan, Fit, and synchronized tools while Rhino remains free for orbiting.
+      Its atlas field and guide layer are cached, so ordinary brush hovering redraws
+      only the lightweight cursor; paint, pan, zoom, fit, resize, or topology changes
+      invalidate the cache.
+      Every atlas sample retains its source path index, so flat painting
+      modifies the original 3D wsp_path. RMS and maximum edge distortion disclose
+      the unavoidable approximation for non-developable shells. radius is measured
+      in atlas/model units and propagation remains inside the selected logical stack.
+      A topology signature preserves paint across coordinate-only upstream updates
+      while still rejecting incompatible branch/item changes.
+      Painter-window state controls separate editable paint from the applied algorithm
+      state. Green `▶ Live` pushes every completed stroke immediately. Red
+      `Ⅱ Paused` keeps edits only in the preview field and enables `Update`;
+      Update copies that pending field into the wsp_path algorithm and is
+      disabled while Live is active. Live mode, applied values, pending values,
+      and Preview visibility persist with the Grasshopper file.
+      mag_domain supplies the signed limits: Pull uses positive values to move
+      outward, Push uses negative values to move inward, and untouched/erased
+      points stay at zero. Panel text such as `-5 to 5` is accepted. Zero is blue,
+      maximum Pull is red, and maximum Push is green; one number x means [0,x].
+      The component preserves point-aligned process fields,
+      rebuilds source curves, clears stale derived data, and uses the same local
+      Infill constraint as Pp11-Pp13. Paint state and Preview visibility are
+      embedded in the Grasshopper file and validated against the source path
+      signature. Right-click Show all outputs exposes the common block followed
+      by `paint_values`.
+    - Pp09 Morph Path Between Surfaces morphs canonical path planes through a
+      flattened ordered `ref_geo` list of Surfaces, Breps, Extrusions, or Meshes.
+      One geometry uses ref_plane as the lower support; two define a lower/upper
+      pair; further items form consecutive piecewise intervals. An optional
+      ref_crv supplies logical-layer tangents sampled by normalized arc length;
+      otherwise authoritative layer normals are preferred and ref_plane.ZAxis is
+      the fallback. Directions are oriented toward positive World Z and
+      downward/near-horizontal cases are reported. Cumulative source layer_h
+      keeps the first deposited path at least one local layer_h above each lower
+      support while allowing the final layer to touch its upper reference. The
+      operation interpolates non-planar relief, supports strength blending and shared
+      multi-role targeting. Stored authoritative layer reference planes replace
+      centroids as the layer-position and signed-relief datum when available;
+      absent layers retain the centroid fallback. Supplied frames are transported,
+      retained on the result, and used to scale layer_h from adjacent frame
+      spacing. No new fitted/reconstructed frames are generated in this version.
+      The component rebuilds layer_h/layer_wf/source curves/print_vol,
+      and clears stale spatial analysis, motion, and KPI fields. Missed or
+      invalid reference intersections preserve their original point planes and
+      are reported. Right-click `Show all outputs` exposes the common block.
+    - Pp15 Add Tag assigns roles directly to an existing wsp_path without
+      changing geometry, process, analysis, motion, KPI, or partial-path data.
+      One role broadcasts; a matching role tree assigns exact branch paths;
+      otherwise flattened role values repeat by branch order. `overwrite=false`
+      changes only Undefined branches, while true permits deliberate retagging.
+      Role values are stored codes 0 Undefined, 1 Shell, 2 Infill, 3 Partition,
+      and 4 Support.
+      Right-click `Show all outputs` exposes the same common block, so the tagged
+      outgoing `path_role` tree can be checked beside all preserved process fields.
+    - Gc06 WASPer Path from Gcode reconstructs a partial `wsp_path` from imported
+      or generated G-code and outputs it first, followed only by `p_path`,
+      `travels`, and `summary`. The recovered path contains geometry, approximate
+      planes, feedrate, and a motion plan only; plain G-code does not reliably
+      carry flows, layer_h, layer_w/layer_wf, material/nozzle metadata, or
+      Pr01/Pr03/Pr04 KPI fields. Its persistent debug block therefore exposes
+      reconstructed planes and speeds while unsupported fields remain empty.
+    - Pp03 remaps point-aligned packed fields when it reorders curves. Gc03 v2 preserves
+      enriched metadata, resolves nozzle_diam from the path when no explicit value
+      is supplied in 3dp_params, and writes resolved LayerW/LayerWf/PrintVol to its
+      outgoing wsp_path. Gc03 retains its established E calculation; packed print_vol
+      remains a geometric reference and does not alter fabrication commands.
+    - Legacy tree inputs remain supported. When both are connected, explicit legacy trees
+      take precedence over the matching packed field.
+    - Packed paths are used by active G-code path-processing, visualization, printability,
+      import/export, and Marlin generator components.
+
+5.1_Robot Gcode (compiled by the optional WASPer_3DP.Robots companion assembly)
+    - wsp_Ro01_Robot Targets (WASP LDM XL 3.0)
+
+Robot G-code workflow
+    - Ro01 targets the WASP LDM XL Extruder 3.0 / KUKAflow workflow. It consumes
+      wsp_path plus LDM 3dp_params and emits native Robots CartesianTarget objects
+      for the Robots Create Program pipeline.
+    - Ro01 also emits target-aligned flow_rate (f_rate) in mm/s. Its tree paths
+      and item counts match robot_target; non-extruding targets report 0.
+    - Print speeds are converted from mm/min to Robots mm/s. KUKA FLOW_RATE is
+      E / segment time in mm/s, and $OUT[1] controls extrusion start/stop.
+    - Repeated speed/flow settings are shared or omitted; changes are attached only
+      where required. Process-change points use stop zones, while unchanged interior
+      print points receive a resolution-derived fly-by zone.
+    - Z-hop defaults to 0/off. When positive, hop targets offset endpoint plane origins
+      in positive World Z while preserving plane orientation. Layer and curve markers are
+      carried as KRL comment commands.
+
+6_Grids of Points
+    - wsp_Gp01_3D Grid (Single-mesh)
+    - wsp_Gp02_3D Grid (multi-mesh)
+    - wsp_Gp03_3D Grid (single-field)
+    - wsp_Gp04_3D Grid (multi-field)
+    - wsp_Gp05_Assign BC to Points (Thermal Solver)
+    - wsp_Gp06_Assign BCs to Points (Thermal Solver)
+    - wsp_Gp07_Grid to FEM Hex Mesh
+
+7_Material Library
+    - wsp_Ma01_Opaque Materials
+    - wsp_Ma02_Gas Materials (Air)
+    - wsp_Ma03_Create WASPer Material (Solid)
+    - wsp_Ma04_Create WASPer Material (Gas)
+    - wsp_Ma05_Inspect WASPer Material
+    - wsp_Ma06_Air Equivalent Lambda (Cond+Rad+Conv)
+    - wsp_Ma07_Create WASPer Layer
+    - wsp_Ma08_Inspect WASPer Layer
+    - wsp_Ma09_Water Content Calc
+    - wsp_Ma10_Water Need Wet
+    - wsp_Ma11_Water Need Dry
+    - wsp_Ma12_3DP Properties
+    - wsp_Ma13_Moisture Vapor Transport
+
+8_Morphology
+    - wsp_Ch01_Printability Assessment
+    - wsp_Ch02_Surface Area Assessment
+    - wsp_Ch03_Tortuosity Assessment
+    - wsp_Ch04_Porosity Assessment
+    - wsp_Ch05_Porosity from Printing Paths
+    - wsp_Ch07_Morphology Fp Estimator
+    - wsp_Ch08_Shrink Geometry
+
+9.0_BCs
+    - wsp_BC01_Boundary Condition In
+    - wsp_BC02_Boundary Condition Out
+    - wsp_BC03_Temperature Series Generator
+    - wsp_BC04_Irradiance Series Generator
+    - wsp_BC05_EPW Weather and Solar Series Generator
+
+9.1_Heat Transfer
+    - wsp_Ht01_Analytical Solver Steady (ISO 6946)
+    - wsp_Ht02_Analytical Solver Dynamic (ISO 13786)
+    - wsp_Ht03_Numerical Solver Steady (Conduction)
+    - wsp_Ht04_Numerical Solver Transient (Conduction)
+    - wsp_Ht04_NST Sim Params
+    - wsp_Ht05_Effective Conductivity Models (Conduction)
+    - wsp_Ht06_Equivalent Conductivity Air Cavities
+    - wsp_Ht07_U-value (ISO 6946)
+    - wsp_Ht08_Color Mesh with Thermal Values
+    - wsp_Ht09_Thermal Field Slice 2D
+    - wsp_Ht10_Adaptive Comfort (ASHRAE 55-2020)
+
+Ht04 notes
+    - Thermal KPI outputs share one serializable contract and carry a method tag. Ht01/Ht02 and
+      Ht05-Ht07 are grouped as `Thermal - Analytical`; Ht03/Ht04 are grouped as
+      `Thermal - Numerical` in the Study Manager. Ht02 exposes `ana_kpis`; Ht03/Ht04 expose
+      `num_kpis`, including Ht04 fresh, cached, and idle solve paths.
+    - Ht01 keeps selected models in the same `Thermal - Analytical` box and inserts one KPI per
+      metric/model combination in metric-first, selected-model order. Multiple samples for one
+      model are averaged; single-sample values remain exact.
+    - NST Sim Params input order begins with optional `period` (Ladybug Analysis Period).
+    - Ht04 outputs include `time` after `q_pts` and `timestamps` after `Q_bc_out`.
+    - Large runs use reduced outdoor-condition model-day cache frames (temperature + precomputed flux)
+      when full history exceeds the cache budget.
+
+9.2_Moisture_Buffering
+    - wsp_Mb01_Moisture Sim Params
+    - wsp_Mb02_Moisture Buffering Solver
+    - wsp_Mb03_Buffering Plot
+    - wsp_Mb04_Room Scale Solver
+    - wsp_Mb05_Point Grid Diffusion
+    - wsp_Mb06_Color Mesh with Moisture Values
+
+9.3_Structural
+    - wsp_St01_Compression Proxy Layered
+    - wsp_St02_Buckling Risk Proxy
+    - wsp_St03_Color Mesh with Structural Values

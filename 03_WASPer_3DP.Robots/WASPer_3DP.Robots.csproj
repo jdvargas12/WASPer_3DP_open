@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\00_Release\WASPer.Version.props" />
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <TargetExt>.gha</TargetExt>
+    <AssemblyName>WASPer_3DP.Robots</AssemblyName>
+    <RootNamespace>WASPer_3DP.RobotsIntegration</RootNamespace>
+    <!-- Keep the optional companion beside the core .gha for local Rhino testing. -->
+    <BaseOutputPath>..\01_WASPer_3DP\bin\</BaseOutputPath>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Title>WASPer_3DP.Robots</Title>
+    <Description>Optional Robots integration components for WASPer_3DP.</Description>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <StageReleasePackages Condition="'$(StageReleasePackages)' == ''">true</StageReleasePackages>
+    <ReleasePackagingScript>$(MSBuildProjectDirectory)\..\00_Release\Stage-ReleasePackages.ps1</ReleasePackagingScript>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="WASPerRobotsInfo.cs" />
+    <Compile Include="Components\5.1_Robot Gcode\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(ReleasePackagingScript)" Link="Build\Stage-ReleasePackages.ps1" />
+    <None Include="..\00_Release\WASPer.Version.props" Link="Build\WASPer.Version.props" />
+    <None Include="..\00_Release\WASPer-ReleaseBuilder.ps1" Link="Build\WASPer-ReleaseBuilder.ps1" />
+    <None Include="..\00_Release\Open-WASPer-ReleaseBuilder.cmd" Link="Build\Open-WASPer-ReleaseBuilder.cmd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\01_WASPer_3DP\WASPer_3DP.csproj" />
+    <PackageReference Include="Grasshopper" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+    <PackageReference Include="RhinoCommon" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+    <PackageReference Include="Robots.Rhino" Version="2.2.5" />
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro01_Robot Targets (WASP LDM XL 3.0).png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro01_Robot Targets (WASP LDM XL 3.0).png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro02_Cartesian Target Offset.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro02_Cartesian Target Offset.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro03_Set Home Target.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro03_Set Home Target.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro04_Merge KRL.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro04_Merge KRL.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro05_Rotate TCP at Target.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro05_Rotate TCP at Target.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro06_Set KUKA Tool.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro06_Set KUKA Tool.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro07_Set KUKA Base.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro07_Set KUKA Base.png" />
+    <EmbeddedResource Include="..\01_WASPer_3DP\Resources\Icons\wsp_Ro08_KUKA Post Processor.png"
+                      LogicalName="WASPer_3DP.Resources.Icons.wsp_Ro08_KUKA Post Processor.png" />
+  </ItemGroup>
+
+  <Target Name="StageWASPerReleasePackages"
+          AfterTargets="Build"
+          Condition="'$(Configuration)' == 'Release' and '$(DesignTimeBuild)' != 'true' and '$(StageReleasePackages)' == 'true'">
+    <Message Importance="high" Text="Staging WASPer Package Manager and food4Rhino release folders" />
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(ReleasePackagingScript)&quot; -Configuration &quot;$(Configuration)&quot; -Framework &quot;$(TargetFramework)&quot;" />
+  </Target>
+
+</Project>

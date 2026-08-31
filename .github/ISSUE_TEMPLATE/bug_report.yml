@@ -1,0 +1,54 @@
+name: Bug Report
+description: Something is broken
+type: Bug
+labels: ['needs-triage']
+body:
+  - type: markdown
+    attributes:
+      value: 'Rhino 7 is not supported. Categories 8_Morphology through 9.3_Structural are not part of this repository yet (Phase 2) - please do not file bugs for functionality that would live there.'
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you expected, what you got instead, and how to get there.
+      placeholder: |
+        Fed two rectangles through Fillet into wsp_In10, then solved the definition.
+        Expected full infill coverage; got a gap near one corner instead.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      description: Optional - leave it on "Not sure" if you'd be guessing.
+      options:
+        - Not sure
+        - Geometry / Fields / Facades
+        - Infills / Slicing
+        - Print Paths / G-code
+        - Printability checks
+        - Robots companion (WASPer_3DP.Robots)
+        - Study Manager / KPIs
+        - Data visualization
+        - Material Library
+        - WASPet / plugin info
+        - Web Process Viewer / XR
+        - Build, packaging, installation
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Versions
+      description: WASPer_3DP version, Rhino version, and OS.
+      placeholder: 'WASPer_3DP 1.0.5.8, Rhino 8.21, Windows 11'
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: The complete Grasshopper error/warning text, or a screenshot. A minimal .gh reproducing the issue is very helpful.
+      render: shell

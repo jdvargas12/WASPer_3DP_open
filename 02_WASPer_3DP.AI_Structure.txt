@@ -1,0 +1,71 @@
+WASPer_3DP.AI - Chapter 02 Structure Map
+Generated: 2026-08-18
+Project file: 02_WASPer_3DP.AI\WASPer_3DP.AI.csproj
+
+Repository layout note (updated 2026-08-28)
+This structure map lives in the Git working repository under 01_WASPer_WIP\00_Visual_Studio.
+Published versions and package archives now live outside the repository in the sibling
+02_Published folder. Local safety snapshots are consolidated in 01_WASPer_WIP\00_Backups
+and are ignored by Git. See the repository README and root AGENTS.md for the current policy.
+
+Scope
+A support library referenced by the main plugin (chapter 01) that reads, inspects, and
+carefully mutates the active Grasshopper canvas, forming a file-based bridge an external
+assistant (Claude) can use to see and adjust a live GH document. It is one of four chapters
+in WASPer_3DP.sln (one solution, one structure map per project):
+  01_WASPer_3DP_Structure.txt          - the main plugin (all Grasshopper components)
+  02_WASPer_3DP.AI_Structure.txt       - this file - AI/canvas-bridge support library
+  03_WASPer_3DP.Robots_Structure.txt   - optional Robots-plugin integration (separate .gha)
+  04_WASPer_3DP.XR_Structure.txt       - LiveLink protocol + Gamma/vvvv process viewer, future XR
+
+Update this file whenever a file in THIS project is added, removed, renamed, or when its
+public surface (what the main plugin can call) changes.
+
+Project settings
+- TargetFramework: net7.0
+- OutputType: Library
+- AssemblyName / RootNamespace: WASPer_3DP.AI
+- Referenced by chapter 01 via: <ProjectReference Include="..\02_WASPer_3DP.AI\WASPer_3DP.AI.csproj" />
+- Compile-time-only references to the local GH817 SDK (GH_IO, Grasshopper, RhinoCommon),
+  hinted at ..\01_WASPer_3DP\ThirdParty\GH817\ - loaded by Rhino at runtime, not shipped.
+- Class1.cs and Properties\AssemblyInfo.cs are explicitly excluded from compilation
+  (<Compile Remove>) - legacy SDK-template placeholders, safe to delete from disk, kept out
+  of the build only.
+
+Source files
+- GhDocumentProvider.cs
+  Single entry point for the active GH_Document (Instances.ActiveDocument). Everything in
+  GhInspector flows from here; returns null if no document is open or the editor isn't ready.
+
+- GhInspector.cs
+  Read-only inspection of the active document. Public surface: GetCanvasSummary() (object/
+  selection/warning counts), GetRuntimeErrors() (every warning/error on the canvas),
+  GetSelectedComponents() (full detail of every selected object), GetAllSliders() (every
+  number slider's value/range/GUID). All methods return null/empty rather than throwing when
+  no document is open. No GH types escape this file - callers only see GhModels types.
+
+- GhModels.cs
+  Plain data objects returned by GhInspector. Only BCL types (string, int, double, List<>) -
+  no GH types - so the models stay serialization-friendly and dependency-free.
+
+- GhMutator.cs
+  Controlled write access to the active document. Current surface is slider-value mutation
+  only (wires, script code, and other component state are not yet supported). Safety rules:
+  values are always clamped to [Minimum, Maximum], the target is resolved by GUID first with
+  nickname as fallback, failed mutations return Success=false rather than throwing, and the
+  document solution is expired after a mutation so Grasshopper re-solves.
+
+- GhScriptReader.cs
+  Reads source code out of Grasshopper script components. GH8 changed the script component
+  architecture enough that there is no single stable public API for reading script content
+  across all variants (C#, Python 3, legacy GHPython, etc.), so this uses a reflection-based
+  property probe tried in priority order across known property paths per GH version/component
+  type. Intentionally defensive: never throws, returns null when content can't be read so the
+  rest of a snapshot still succeeds.
+
+- GhCapture.cs
+  Public entry point for the file-based bridge. GhCapture.GetSnapshot() aggregates every
+  GhInspector result into one GhSnapshot; the caller (a main-plugin component) serializes it
+  to JSON, which is then read from disk on demand. GhCapture itself has no serialization
+  dependency (only knows about GhInspector/GhModels) - JSON handling stays in chapter 01,
+  which already depends on Newtonsoft.Json.

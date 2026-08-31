@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>WASPer.LiveLink.Protocol</AssemblyName>
+    <RootNamespace>WASPer.LiveLink</RootNamespace>
+    <Version>1.0.0.0</Version>
+    <Description>WSPLINK1 one-way shared-memory live link between Grasshopper and vvvv Gamma. Contains no RhinoCommon reference.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The transport copies frames with Buffer.MemoryCopy against the mapped
+         view pointer. MemoryMappedViewAccessor marshals element by element and
+         measured about 7.7 ms per MB, which put the frame budget itself under
+         pressure rather than the hardware. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>CA1416</NoWarn>
+  </PropertyGroup>
+
+  <!-- Deliberately no PackageReference. CRC32 is implemented inline so this
+       assembly ships as a single dependency-free DLL next to the .gha and
+       inside the Gamma patch. -->
+
+</Project>

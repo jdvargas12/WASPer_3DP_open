@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore 01_WASPer_3DP/WASPer_3DP.sln
+
+      - name: Build (compile only, skip Yak manifest/WebViewer publish)
+        run: dotnet build 01_WASPer_3DP/WASPer_3DP.sln -c Release --no-restore -p:SkipYakManifest=true

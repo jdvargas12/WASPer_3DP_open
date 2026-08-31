@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>WASPer.XR.Core</RootNamespace>
+    <AssemblyName>WASPer.XR.Core</AssemblyName>
+    <Description>Platform-independent WASPer print job and live process-state data model. No Grasshopper, RhinoCommon, vvvv, Stride, Unity, Godot, or browser API references by design, so every viewer client can reference this assembly directly.</Description>
+  </PropertyGroup>
+
+</Project>

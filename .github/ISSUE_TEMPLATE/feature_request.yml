@@ -1,0 +1,26 @@
+name: Feature Request
+description: Suggest an idea or a new component
+type: Feature
+labels: ['needs-triage']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: The workflow or limitation that prompted this request.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What you'd like to see - a new component, an input/output change, a workflow improvement.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Anything you're doing today to get around this, if applicable.

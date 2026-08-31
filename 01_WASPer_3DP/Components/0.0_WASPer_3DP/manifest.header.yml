@@ -1,0 +1,99 @@
+name: WASPer_3DP
+version: 1.0.5.8
+authors:
+  - Juan Diego Vargas
+website: https://www.linkedin.com/in/juan-diego-vargas-vel/
+description: |
+  WASPer_3DP is a Rhino 8 / Grasshopper plugin for Design for Additive Manufacturing (DfAM).
+  It supports computational design, digital fabrication, and early-stage performance feedback
+  for 3D-printed building components, with a particular focus on large-scale Liquid Deposition
+  Modeling (LDM), clay-based printing, and WASP40100-style workflows.
+
+  The plugin connects geometry processing, implicit fields, infill generation, slicing,
+  print-path preparation, G-code generation, material/layer data, visualization, and selected
+  research-oriented analysis tools inside one parametric environment.
+
+  It also supports robotic fabrication workflows: generated `wsp_path` toolpaths contain
+  fabrication data such as planes/targets, layer heights, roles, process values, and metadata
+  that can be used in combination with plugins such as Robots or KUKA|prc. WASPer_3DP also
+  includes a dedicated 5.1_Robot Gcode category with components compatible with the open-source
+  Robots plugin.
+
+  A central concept in recent versions is the WASPer path (`wsp_path`): a structured
+  fabrication-path container that keeps curves, layers, point-level process values, roles,
+  motion information, and metadata together as one reusable object. This makes it easier to
+  move printing paths through optimization, simulation, G-code, robotic fabrication,
+  visualization, Study Manager workflows, and XR/AR process-viewer workflows without losing
+  the relationship between geometry, process parameters, and fabrication intent.
+
+  WASPer_3DP is intended for researchers, architects, engineers, fabricators, and makers
+  exploring additive manufacturing for architecture and construction. It is an independent
+  research project developed at Politecnico di Torino and currently enhanced in collaboration
+  with ACTech Hub at the University of Minho.
+
+  Main capabilities include:
+  - Planar, non-planar, and surface-aware slicing workflows for 3D-printing paths,
+    supporting both 3-axis and selected multi-axis fabrication workflows
+  - 2D and 3D infill generation, including S-patterns, spiral paths, conformal paths,
+    TPMS, polyhedral/cellular systems, brick-like cavities, and custom SDF-based infills
+  - Signed-distance-field tools for implicit geometry, field booleans, offsets, shells,
+    contouring, meshing, field transformation, Isopod/WASPer field exchange, and
+    field-based path operations
+  - Mesh, image, bitmap, and painting tools for generating color fields, scalar fields,
+    local mesh deformation, and texture-driven geometry workflows
+  - Printing-path preparation and optimization, including path construction from curves,
+    path roles, path transformation, flow assignment, point reduction, velocity utilities,
+    fuzzy-skin/fuzzy-pocket tools, proximity-based flow estimation, and path visualization
+  - Marlin G-code generation, parsing, saving, and process simulation for LDM/FDM workflows,
+    currently focused on 3-axis printer workflows
+  - A 5.1_Robot Gcode category with components compatible with the open-source Robots plugin,
+    including Robots target generation from `wsp_path`, target utilities, tool/base helpers,
+    KRL merging, and KUKA post-processing support for robotic fabrication workflows. These
+    robotic fabrication components are functional but still require further testing across
+    different robot setups, tools, and fabrication scenarios.
+  - Facade and panelization tools for UV-based panels, joints, weighted tile layouts,
+    and SDF-informed facade systems
+  - Material and layer utilities for opaque/gas materials, equivalent air conductivity,
+    water-content calculations, 3D-printing material properties, and reusable material/layer
+    records
+  - Fabrication-oriented printability and fresh-deformation proxy checks for early-stage comparison
+  - Native data-visualization tools, including scatter plots, bar charts, box plots, histograms,
+    heatmaps, Pareto fronts, 3D graphs, and parallel coordinates inside Rhino/Grasshopper
+  - CSV/Excel/JSON utilities, Grasshopper document inspection helpers, viewport/image export,
+    and workflow automation utilities
+  - Study Manager workflows for comparing design alternatives, capturing iterations, linking
+    Grasshopper sliders, exporting study data, generating reports, and reviewing
+    design/performance KPIs from a dedicated manager interface
+  - Web-based XR/AR Process Viewer tools for packaging and live-previewing fabrication
+    jobs, including path/mesh playback, contextual printer or scene geometry, mobile
+    access through QR links, and browser/AR inspection of 3D-printing processes
+
+  The XR/AR Process Viewer is currently intended as an experimental visualization and
+  communication tool, not as a metrology, collision-safety, or machine-control system.
+  AR scale, alignment, browser performance, device compatibility, and live synchronization
+  depend on the receiving device and local network conditions. Sharing is currently
+  local-network / localhost based and does not include an internet-hosted public cloud
+  sharing service.
+
+  WASPer_3DP is still under active development. Some components may contain bugs, edge cases,
+  changing interfaces, or methods that require further validation. Feedback, bug reports,
+  suggestions, and examples of use are always welcome.
+keywords:
+  - DfAM 
+  - Planar_3D_printing
+  - Non_planar_3D_printing
+  - G_code
+  - LDM
+  - Toolpath_optimization
+  - Infill_generation
+  - Signed_distance_fields
+  - Non_planar_slicing
+  - Computational_design
+  - Digital_fabrication
+  - Facade_systems
+  - Data_visualization
+platform: any
+rhino: "8.0"
+rhino_version: ">=8.0.0 <9.0.0"
+url: https://www.food4rhino.com/en/app/wasper3dp
+files:

@@ -1,0 +1,64 @@
+WASPer_3DP.Robots - Chapter 03 Structure Map
+Generated: 2026-08-18
+Project file: 03_WASPer_3DP.Robots\WASPer_3DP.Robots.csproj
+
+Repository layout note (updated 2026-08-28)
+This structure map lives in the Git working repository under 01_WASPer_WIP\00_Visual_Studio.
+Published versions and package archives now live outside the repository in the sibling
+02_Published folder. Local safety snapshots are consolidated in 01_WASPer_WIP\00_Backups
+and are ignored by Git. See the repository README and root AGENTS.md for the current policy.
+
+Scope
+A separate, optional Grasshopper assembly (its own GH_AssemblyInfo and plugin GUID, builds
+its own .gha) reserved for Robots-plugin-dependent integration components. It is kept
+physically separate from the main plugin (chapter 01) so that installing WASPer_3DP does not
+force a dependency on the third-party Robots plugin for users who don't need it. It is one of
+four chapters in WASPer_3DP.sln (one solution, one structure map per project):
+  01_WASPer_3DP_Structure.txt          - the main plugin (all Grasshopper components)
+  02_WASPer_3DP.AI_Structure.txt       - AI/canvas-bridge support library
+  03_WASPer_3DP.Robots_Structure.txt   - this file - optional Robots-plugin integration
+  04_WASPer_3DP.XR_Structure.txt       - LiveLink protocol + Gamma/vvvv process viewer, future XR
+
+Update this file whenever a component is added to this project, or when its dependency on the
+Robots plugin / Robots.Rhino package changes.
+
+Active component source
+Components\5.1_Robot Gcode contains the eight active Ro components. They are compiled only by
+WASPer_3DP.Robots.csproj because they use the Robots.Rhino API and require the Robots plugin at
+runtime. Keeping the files physically in this project prevents Visual Studio from presenting
+active sources as excluded files under the core WASPer_3DP project.
+
+Project settings
+- TargetFramework: net8.0-windows
+- ProjectReference: ..\01_WASPer_3DP\WASPer_3DP.csproj
+- Shared version: ..\00_Release\WASPer.Version.props reads the main manifest version so both
+  assemblies and release packages report the same value.
+- Release packaging: after a successful Release build, this final required assembly invokes
+  ..\00_Release\Stage-ReleasePackages.ps1 to create the Package Manager and food4Rhino layouts
+  in the configured per-user destination (or the portable bin\Release\Published default).
+  Set StageReleasePackages=false for a binaries-only Release build.
+- PackageReference (compile-only where noted):
+  - Grasshopper 8.21.25188.17001 (ExcludeAssets="runtime")
+  - RhinoCommon 8.21.25188.17001 (ExcludeAssets="runtime")
+  - Robots.Rhino 2.2.5
+  - System.Drawing.Common 7.0.0
+
+Plugin assembly info (WASPerRobotsInfo.cs, namespace WASPer_3DP.RobotsIntegration)
+- Name: "WASPer_3DP.Robots"
+- Description: "Optional Robots integration components for WASPer_3DP. Requires the Robots
+  Grasshopper plugin."
+- Guid: B8D6D697-D369-49FB-890B-59CC57B9F45F
+- AuthorName: Juan Diego Vargas
+- Icon: none set yet (Icon => null)
+
+Source files
+- WASPerRobotsInfo.cs
+  GH_AssemblyInfo for the optional companion assembly.
+- Components\5.1_Robot Gcode\wsp_Ro01_Robot Targets (WASP LDM XL 3.0).cs
+- Components\5.1_Robot Gcode\wsp_Ro02_Cartesian Target Offset.cs
+- Components\5.1_Robot Gcode\wsp_Ro03_Set Home Target.cs
+- Components\5.1_Robot Gcode\wsp_Ro04_Merge KRL.cs
+- Components\5.1_Robot Gcode\wsp_Ro05_Rotate TCP at Target.cs
+- Components\5.1_Robot Gcode\wsp_Ro06_Set KUKA Tool.cs
+- Components\5.1_Robot Gcode\wsp_Ro07_Set KUKA Base.cs
+- Components\5.1_Robot Gcode\wsp_Ro08_KUKA Post Processor.cs

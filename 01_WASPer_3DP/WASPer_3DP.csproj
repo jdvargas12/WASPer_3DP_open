@@ -1,0 +1,534 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\00_Release\WASPer.Version.props" />
+
+	<!-- ? Build target and settings -->
+	<PropertyGroup>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<TargetExt>.gha</TargetExt>
+		<LangVersion>latest</LangVersion>
+		<NoWarn>NU1701;NETSDK1086;CA1416</NoWarn>
+
+		<!-- SDK baseline shared with Robots.Rhino 2.2.5. -->
+		<GrasshopperSdkVersion>8.21.25188.17001</GrasshopperSdkVersion>
+	</PropertyGroup>
+
+	<!-- ? Assembly + Yak info -->
+	<PropertyGroup>
+		<Title>WASPer_3DP</Title>
+		<Company>Juan Diego Vargas</Company>
+		<Description>WASPer_3DP is a Rhino 8 / Grasshopper plugin for computational design and digital fabrication of 3D-printed building components. It connects geometry processing, implicit fields, infill generation, planar and non-planar slicing, printing-path preparation, G-code workflows, material libraries, facade systems, visualization, and design studies inside one parametric environment.</Description>
+	</PropertyGroup>
+
+
+	<!-- ? Generate manifest automatically from ghuser and examples -->
+	<PropertyGroup>
+		<YakManifestHeader>$(WASPerManifestHeader)</YakManifestHeader>
+		<WebViewerProject>$(MSBuildProjectDirectory)\..\04_WASPer_3DP.XR\07_WebViewer\WASPer.XR.WebViewer\WASPer.XR.WebViewer.csproj</WebViewerProject>
+		<WebViewerScripts>$(MSBuildProjectDirectory)\..\04_WASPer_3DP.XR\07_WebViewer\scripts</WebViewerScripts>
+		<StopWebViewerOnBuild Condition="'$(StopWebViewerOnBuild)' == ''">true</StopWebViewerOnBuild> 
+	</PropertyGroup>
+
+	<!-- Pass -p:SkipYakManifest=true for a fast compile-only build (e.g. CI): skips the
+	     WebViewer publish and manifest generation, which need the sibling XR project
+	     and network access to restore, and are irrelevant to "does the C# compile". -->
+	<Target Name="PublishBundledWebViewer" BeforeTargets="GenerateYakManifest" Condition="'$(SkipYakManifest)' != 'true'">
+		<Message Importance="high" Text="Publishing bundled WASPer XR WebViewer to $(TargetDir)webviewer\app" />
+		<Message Condition="'$(StopWebViewerOnBuild)' == 'true'" Importance="high" Text="Stopping running WASPer XR WebViewer processes before replacing the bundled viewer" />
+		<Exec Condition="'$(StopWebViewerOnBuild)' == 'true'" Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;Get-Process -Name 'WASPer.XR.WebViewer' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 250&quot;" />
+		<Exec Condition="Exists('$(TargetDir)webviewer\app')" Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$p='$(TargetDir)webviewer\app'; Get-ChildItem -LiteralPath $p -Recurse -Force | ForEach-Object { $_.Attributes = 'Normal' }; (Get-Item -LiteralPath $p -Force).Attributes = 'Directory'&quot;" />
+		<RemoveDir Directories="$(TargetDir)webviewer\app" Condition="Exists('$(TargetDir)webviewer\app')" />
+		<MakeDir Directories="$(TargetDir)webviewer\app;$(TargetDir)webviewer\scripts" />
+		<Exec Command="dotnet publish &quot;$(WebViewerProject)&quot; -c $(Configuration) -r win-x64 --self-contained false -o &quot;$(TargetDir)webviewer\app&quot;" />
+		<Copy SourceFiles="$(WebViewerScripts)\Start-WASPerWebViewer.ps1;$(WebViewerScripts)\Package-StandaloneViewer.ps1"
+			DestinationFolder="$(TargetDir)webviewer\scripts\" />
+	</Target>
+
+	<Target Name="GenerateYakManifest" AfterTargets="CoreBuild" Condition="'$(SkipYakManifest)' != 'true'">
+		<Message Importance="high" Text="GenerateYakManifest running. TargetDir=$(TargetDir)" />
+		<Message Importance="high" Text="YakManifestHeader=$(YakManifestHeader)" />
+
+	<ItemGroup>
+		<Compile Include="Components\0.0_WASPer_3DP\WASPerMascot.cs" />
+		<Compile Include="Components\1.1_Data Vis\wsp_Da06_Pareto Front.cs" />
+    <Compile Include="Components\1.1_Data Vis\wsp_Da07_3D Graph.cs" />
+    <Compile Include="Components\1.1_Data Vis\wsp_Da08_Parallel Coordinates.cs" />
+			<_GhUserFiles Include="Resources\Ghuser\*.ghuser" />
+			<_ExampleFiles Include="Resources\Examples\**\*.gh;Resources\Examples\**\*.ghx" />
+			<_MaterialLib Include="Resources\Mat_lib\**\*.xlsx" />
+			<_WebViewerFiles Include="$(TargetDir)webviewer\**\*" />
+			<_WebViewerFiles>
+				<ManifestPath>$([System.String]::Copy('webviewer/%(RecursiveDir)%(Filename)%(Extension)').Replace('\', '/'))</ManifestPath>
+			</_WebViewerFiles>
+  </ItemGroup>
+
+		<ItemGroup>
+			<_ManifestGhuserLines Include="@(_GhUserFiles->'  - file: ghuser/%(RecursiveDir)%(Filename)%(Extension)')" />
+			<_ManifestExampleLines Include="@(_ExampleFiles->'  - file: examples/%(RecursiveDir)%(Filename)%(Extension)')" />
+			<_BuiltInManifestFile Include="_built_in_examples.txt" />
+			<_ManifestExampleLines Include="@(_BuiltInManifestFile->'  - file: examples/%(Identity)')" />
+			<_BuiltInExampleNameLines Include="@(_ExampleFiles->'%(RecursiveDir)%(Filename)%(Extension)')" />
+			<_ManifestMatLines Include="@(_MaterialLib->'  - file: mat_lib/%(RecursiveDir)%(Filename)%(Extension)')" />
+			<_ManifestWebViewerLines Include="@(_WebViewerFiles->'  - file: %(ManifestPath)')" />
+		</ItemGroup>
+
+		<ItemGroup>
+			<_ManifestGeneratedLines Include="# user_objects" />
+			<_ManifestGeneratedLines Include="@(_ManifestGhuserLines)" />
+
+			<_ManifestGeneratedLines Include="# examples" />
+			<_ManifestGeneratedLines Include="@(_ManifestExampleLines)" />
+
+			<_ManifestGeneratedLines Include="# materials" />
+			<_ManifestGeneratedLines Include="@(_ManifestMatLines)" />
+
+			<_ManifestGeneratedLines Include="# webviewer" />
+			<_ManifestGeneratedLines Include="@(_ManifestWebViewerLines)" />
+
+			<_ManifestGeneratedLines Include="#main icon" />
+			<_ManifestGeneratedLines Include="icon: 00_WASPer_3DP.png" />
+
+			<_ManifestGeneratedLines Include="#time: $([System.DateTime]::Now.ToString('yyyy-MM-dd HH:mm:ss'))" />
+		</ItemGroup>
+
+		<MakeDir Directories="$(TargetDir)examples" />
+		<WriteLinesToFile File="$(TargetDir)examples\_built_in_examples.txt" Lines="@(_BuiltInExampleNameLines)" Overwrite="true" Encoding="UTF-8" />
+		<!-- Copy preserves YAML indentation; converting header lines to MSBuild items strips leading spaces. -->
+		<Copy SourceFiles="$(YakManifestHeader)" DestinationFiles="$(TargetDir)manifest.yml" />
+		<WriteLinesToFile File="$(TargetDir)manifest.yml" Lines="@(_ManifestGeneratedLines)" Overwrite="false" Encoding="UTF-8" />
+	</Target>
+
+	<!-- ? Components excluded from compilation -->
+	<ItemGroup>
+		<!-- Archive convention: every C# snapshot under any component Archive folder is non-compiling. -->
+		<Compile Remove="Components\**\Archive\**\*.cs" />
+		<!-- Phase 1 public boundary. Keep these exclusions effective even when a maintainer
+		     restores the private Phase 2 overlay beside the public source. -->
+		<Compile Remove="Components\8_Morphology\**\*.cs" />
+		<Compile Remove="Components\9.0_BCs\**\*.cs" />
+		<Compile Remove="Components\9.1_Heat Transfer\**\*.cs" />
+		<Compile Remove="Components\9.2_Moisture_Buffering\**\*.cs" />
+		<Compile Remove="Components\9.3_Structural\**\*.cs" />
+		<Compile Remove="Components\Shared\Performance\WASPer_BoundaryTypes.cs" />
+		<Compile Remove="Components\Shared\Performance\WASPer_MoistureDiffusionSolver.cs" />
+		<Compile Remove="Components\Shared\Performance\WASPer_NstSimParams.cs" />
+		<Compile Remove="Components\Shared\Performance\WASPer_GridSparseSolver.cs" />
+		<Compile Remove="Components\Shared\Performance\WASPer_ThermalCommon.cs" />
+		<!-- ?? Ut components pending rewrite - wrong inputs/outputs, do not compile -->
+		<Compile Remove="Components\1.0_Utils\Archive\wsp_Ut12_Entwine Reindex_260220.cs" />
+		<Compile Remove="Components\1.0_Utils\Archive\wsp_Ut13_GH_Canvas_Info.cs" />
+		<Compile Remove="Components\1.0_Utils\Archive\wsp_Ut14_ChatGPT.cs" />
+		<Compile Remove="Components\1.0_Utils\Archive\wsp_Ut14_GH_Mutator.cs" />
+		<Compile Remove="Components\1.0_Utils\Archive\wsp_Ut15_GH AI Bridge.cs" />
+		<Compile Remove="Components\1.0_Utils\wsp_Ut12_Entwine Reindex_260220.cs" />
+		<!-- Archive snapshots ÃƒÂ¯Ã‚Â¿Ã‚Â½ keep in project but do not compile -->
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In09_TPMS from surfaces SDF_archive_20260616_pre_AB_perf.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In12_Polyhedral Array from Surfaces SDF_archive_20260616_pre_AB_perf.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In11_Polyhedral Box Array SDF_archive_20260512.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In12_Polyhedral Array from Surfaces SDF_archive_20260512.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_TPMS Box Array SDF_archive_20260516_pre_field_normals.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In09_TPMS from surfaces SDF_archive_20260516_pre_field_normals.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In11_Polyhedral Box Array SDF_archive_20260516_pre_field_normals.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In12_Polyhedral Array from Surfaces SDF_archive_20260516_pre_field_normals.cs" />
+		<Compile Remove="Components\Shared\Archive\WASPer_MarchingCubesExtractor_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\2.3_Fields_3D\Archive\wsp_Fi3d02_Mesh from Field_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\2.3_Fields_3D\Archive\wsp_Fi3d03_Shell from Field_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\2.3_Fields_3D\Archive\wsp_Fi3d04_Field 3D Booleans_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\2.3_Fields_3D\Archive\wsp_Fi3d09_Thicken Field Along Curve_archive_20260616_pre_perf.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_TPMS Box Array SDF_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In09_TPMS from surfaces SDF_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In10_Custom Infill SDF_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In11_Polyhedral Box Array SDF_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In12_Polyhedral Array from Surfaces SDF_archive_20260529_pre_shared_mc.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In14_Turtle Cells_archive_20260529_pre_cell_count_warning.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In14_Turtle Cells_archive_20260609_pre_layer_plane_tools.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In15_TPMS from Slices_archive_20260609_pre_layer_plane_tools.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In16_Multi_Infill_2D_archive_20260609_pre_layer_plane_tools.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In17_Multi_Infill_3D_archive_20260609_pre_layer_plane_tools.cs" />
+		<Compile Remove="Components\3.0_Slicing\Archive\wsp_Sl01_Slicer_archive_20260609_pre_ref_curve_mode.cs" />
+		<Compile Remove="Components\3.0_Slicing\Archive\wsp_Sl04_Orient_Paths_archive_20260609_pre_layer_plane_tools.cs" />
+		<Compile Remove="Components\2.1_Facades\Archive\wsp_Fa05_Finger Joints (SDF)_archive_20260512.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In06_TPMS from surfaces SDF_test.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260212.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260223.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260312.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260315.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260324.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_gh.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_trial.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In09_TPMS from Slices_260220.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260225.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In09_TPMS from Slices_260224.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_260324.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_claude.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_claude_v2.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_gpt.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In05_TPMS Box Array_260502_preSDF.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In06_TPMS from surfaces_260502_preSDF.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In06_TPMS from surfaces SDF_260502_preUVT.cs" />
+		<Compile Remove="Components\3.1_Infills\Archive\wsp_In05_TPMS lattice from 2 meshes_legacy.cs" />
+		<!-- In01 and In02 are compiled native components; their legacy user objects are archived below. -->
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_260212.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_260223.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_260312.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_260315.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_gh.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In08_Turtle Cells_trial.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In09_TPMS from Slices_260220.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In10_S_from_Slices_claude_v2.cs" />
+		<Compile Remove="Components\3.1_Infills\wsp_In10_S_from_Slices_gpt.cs" />
+		<Compile Remove="Components\2.2_Fields\wsp_Fi03_Blend Fields_260217.cs" />
+		<Compile Remove="Components\2.2_Fields\wsp_Fi04_Fields to Frames.cs" />
+		<Compile Remove="Components\3.0_Slicing\Archive\wsp_Sl03_SlicerPlus (Fields)_archive_20260603.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc00_Visualize Gcode Path.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc00_Visualize_Gcode_Path_NP_260128.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes_v2.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes_v3.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc01_PointsAndFluxes_NonPlanar_260124.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc02_FlowFromProximity_gpt.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc02_Ppath Optimization_v1.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc02_Ppath Optimization_v2_251201.cs" />
+		<Compile Remove="Components\5.0_Gcode\Archive\wsp_Gc08_3DCP Velocity_archive_20260622_pre_contact_width_fix.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc00_Visualize Gcode Path.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc00_Visualize_Gcode_Path_NP_260128.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc01_Points and Fluxes.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc01_Points and Fluxes_v2.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc01_Points and Fluxes_v3.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc01_PointsAndFluxes_NonPlanar_260124.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc02_FlowFromProximity_gpt.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc02_Ppath Optimization_v1.cs" />
+		<Compile Remove="Components\5.0_Gcode\wsp_Gc02_Ppath Optimization_v2_251201.cs" />
+		<Compile Remove="Components\3.0_Slicing\Archive\wsp_Sl02_SlicerPlus_260508_preList.cs" />
+		<Compile Remove="Archive_NonCompile\5_Kuka_PRC\**\*.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_250909.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_archive_20260516_pre_precise_filter.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_archive_20260516_pre_strict_auto_spacing.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_251201.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_archive_20260516_pre_precise_filter.cs" />
+		<Compile Remove="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_archive_20260516_pre_strict_auto_spacing.cs" />
+		<Compile Remove="Components\6_Grids of Points\wsp_Gp01_3D Grid_single_250909.cs" />
+		<Compile Remove="Components\6_Grids of Points\wsp_Gp02_3D Grid_multi_251201.cs" />
+		<Compile Remove="Resources\Templates\wsp_ComponentTemplate.cs" />
+	</ItemGroup>
+
+	<!-- ? Remove local-only assets from copy -->
+	<ItemGroup>
+		<None Remove="Resources\Examples\HeatTransferNew_260622.gh" />
+		<None Remove="Resources\Icons\wsp_BC*.png;Resources\Icons\wsp_Ch*.png;Resources\Icons\wsp_Ht*.png;Resources\Icons\wsp_Mb*.png;Resources\Icons\wsp_St*.png" />
+		<None Remove="Tools\TensorMesh\**\*" />
+		<None Remove="Components\0.0_WASPer_3DP\WASPer_3DP_structure.txt" />
+		<None Remove="Components\7_Material Library\solid_materials_lib.json" />
+		<None Remove="Resources\Examples\250612_HeatTransfer.gh" />
+		<None Remove="Resources\Examples\251114_3DPrinting .gh" />
+		<None Remove="Resources\Examples\251201_3DPrinting.gh" />
+		<None Remove="Resources\Examples\Implicit_260217.gh" />
+		<None Remove="Resources\Icons\00_WASPer_3DP.png" />
+		<None Remove="Resources\Icons\01_WASPer_3DP.png" />
+		<None Remove="Resources\Icons\02_WASPer_Performance.png" />
+		<None Remove="Resources\Icons\02_GenGcode.png" />
+		<None Remove="Resources\Icons\wsp_Gc02_LDM 3DP Parameters.png" />
+		<None Remove="Resources\Icons\wsp_Gc03_FDM 3DP Parameters.png" />
+		<None Remove="Resources\Icons\wsp_Gc04_Marlin Gcode.png" />
+		<None Remove="Resources\Icons\03_SaveDcode.png" />
+		<None Remove="Resources\Icons\04_PpathOpt.png" />
+		<None Remove="Resources\Icons\05_CloseCrvs.png" />
+		<None Remove="Resources\Icons\05_WaterWet.png" />
+		<None Remove="Resources\Icons\07_WaterDry.png" />
+		<None Remove="Resources\Icons\08_MeshrRed.png" />
+		<None Remove="Resources\Icons\09_Slice.png" />
+		<None Remove="Resources\Icons\09_Slice_2.png" />
+		<None Remove="Resources\Icons\11_S_Infill.png" />
+		<None Remove="Resources\Icons\wsp_In02_Spiral Infill 2D.png" />
+		<None Remove="Resources\Icons\wsp_In16_Multi-Infill 2D.png" />
+		<None Remove="Resources\Icons\12_SpiralInfill.png" />
+		<None Remove="Resources\Icons\13_Grid_from_mesh.png" />
+		<None Remove="Resources\Icons\14_Grid_from_mesh_mult.png" />
+		<None Remove="Resources\Icons\15_solid_mat.png" />
+		<None Remove="Resources\Icons\wsp_Fi01_Distance Field 2D.png" />
+		<None Remove="Resources\Icons\wsp_Fi02_Field Booleans.png" />
+		<None Remove="Resources\Icons\wsp_Fi03_Blend Fields.png" />
+		<None Remove="Resources\Icons\wsp_Fi04_Fields to Frames.png" />
+		<None Remove="Resources\Icons\wsp_Fi05_Contours From Fields.png" />
+		<None Remove="Resources\Icons\wsp_Fi06_Mesh from Fields.png" />
+		<None Remove="Resources\Icons\wsp_Fi07_Deconstruct Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi08_Infill Layers to Fields.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d03_Shell from Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d04_Field 3D Booleans.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d05_Transform Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d06_Trim Paths with Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d06_Invert Field.png" />
+		<None Remove="Resources\Icons\wsp_Pp19_Trim Paths with Fields.png" />
+		<None Remove="Resources\Icons\wsp_Pp21_Orient Print Path.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d07_Offset Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d08_Field History.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d09_Thicken Field Along Curve.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d10_Isopod to WASPer Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d11_WASPer to Isopod Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d12_WASPer Ghost Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d14_Dendro to WASPer Field.png" />
+		<None Remove="Resources\Icons\wsp_Fi3d15_WASPer to Dendro Field.png" />
+		<None Remove="Resources\Icons\wsp_Gc10_Construct WASPer Path.png" />
+		<None Remove="Resources\Icons\wsp_Gc10_Visualize_Gcode_Path_and_Fluxes.png" />
+		<None Remove="Resources\Icons\wsp_Gc11_Visualize_Gcode_Path_and_Fluxes.png" />
+		<None Remove="Resources\Icons\wsp_Gc07_Reduce Path Points from Curvature.png" />
+		<None Remove="Resources\Icons\wsp_Gc08_SpeedFromCurvature.png" />
+		<None Remove="Resources\Icons\wsp_Gc12_Printing_Path_from_Gcode.png" />
+		<None Remove="Resources\Icons\wsp_Gc13_Printing_Path_from_Gcode.png" />
+		<None Remove="Resources\Icons\wsp_Pr02_3DCP Velocity.png" />
+		<None Remove="Resources\Icons\wsp_Pr01_Printability Assessment.png" />
+		<None Remove="Resources\Icons\wsp_Pr03_Fresh Deformation Risk.png" />
+		<None Remove="Resources\Icons\wsp_Pr04_Beam Deflection Proxy.png" />
+		<None Remove="Resources\Icons\wsp_Gc11_Color Mesh with Gcode Values.png" />
+		<None Remove="Resources\Icons\wsp_Gc12_Color Mesh with Gcode Values.png" />
+		<None Remove="Resources\Icons\wsp_Gc13_Deconstruct Print Path.png" />
+		<None Remove="Resources\Icons\wsp_Gc14_Deconstruct Print Path.png" />
+		<None Remove="Resources\Icons\wsp_Gc14_Deconstruct Path KPIs.png" />
+		<None Remove="Resources\Icons\wsp_Ge03_Tets Between Meshes.png" />
+		<None Remove="Resources\Icons\wsp_Ge04_Point Distance Checker.png" />
+		<None Remove="Resources\Icons\wsp_Ge05_Project Points On Mesh.png" />
+		<None Remove="Resources\Icons\wsp_Ge06_Project Curves On Mesh.png" />
+		<None Remove="Resources\Icons\wsp_Ge07_Cull Duplicate Points.png" />
+		<None Remove="Resources\Icons\wsp_Ge08_Solid from Surfaces.png" />
+		<None Remove="Resources\Icons\wsp_Ge09_Solid from Mesh Caps.png" />
+		<None Remove="Resources\Icons\wsp_Ge10_Efficient Bounding Box.png" />
+		<None Remove="Resources\Icons\wsp_Gp03_Assign BC to Points (Thermal Solver).png" />
+        <None Remove="Resources\Icons\wsp_Gp06_Assign BCs to Points (Thermal Solver).png" />
+        <None Remove="Resources\Icons\wsp_Gp07_Grid to FEM Hex Mesh.png" />
+		<None Remove="Resources\Icons\wsp_In03_Voxelize.png" />
+		<None Remove="Resources\Icons\wsp_In04_Morph Between.png" />
+		<None Remove="Resources\Icons\wsp_In05_TPMS Box Array.png" />
+		<None Remove="Resources\Icons\wsp_In08_TPMS Box Array SDF_v2.png" />
+		<None Remove="Resources\Icons\wsp_In06_TPMS from surfaces.png" />
+		<None Remove="Resources\Icons\wsp_In07_Populate With Cells.png" />
+		<None Remove="Resources\Icons\wsp_In08_Turtle Cells.png" />
+		<None Remove="Resources\Icons\wsp_In09_TPMS_from_Slices.png" />
+		<None Remove="Resources\Icons\wsp_In09_TPMS from surfaces SDF_v2.png" />
+		<None Remove="Resources\Icons\wsp_In08_Volumetric Infill From Box.png" />
+		<None Remove="Resources\Icons\wsp_In09_Volumetric Multi-Infill From Surfaces.png" />
+		<None Remove="Resources\Icons\wsp_In10_Layered Multi-Infill From Curves.png" />
+		<None Remove="Resources\Icons\wsp_In11_TPMS Infill Params.png" />
+		<None Remove="Resources\Icons\wsp_In12_Planar Infill Params.png" />
+		<None Remove="Resources\Icons\wsp_In13_Turtle Infill Params.png" />
+		<None Remove="Resources\Icons\wsp_In14_Polyhedral Infill Params.png" />
+		<None Remove="Resources\Icons\wsp_In15_Brick-like Infill Params.png" />
+		<None Remove="Resources\Icons\wsp_In13_Brick_like_Box_Array_SDF.png" />
+		<None Remove="Resources\Icons\wsp_Ma02_Gas Materials_Air.png" />
+		<None Remove="Resources\Icons\wsp_Ma03_Create WASPer Material.png" />
+		<None Remove="Resources\Icons\wsp_Ma04_Create WASPer Material (Gas).png" />
+		<None Remove="Resources\Icons\wsp_Ma05_Inspect WASPer Material.png" />
+		<None Remove="Resources\Icons\wsp_Ma06_Air Equivalent Lambda.png" />
+		<None Remove="Resources\Icons\wsp_Ma07_Create WASPer Layer.png" />
+		<None Remove="Resources\Icons\wsp_Ma08_Inspect WASPer Layer.png" />
+		<None Remove="Resources\Icons\wsp_Ma09_Water Content Calc.png" />
+		<None Remove="Resources\Icons\wsp_Ma13_Moisture Vapor Transport.png" />
+		<None Remove="Resources\Icons\wsp_Ma12_3DP Properties.png" />
+		<None Remove="Resources\Icons\wsp_Sl06_Visualize_Printing_Path.png" />
+		<None Remove="Resources\Icons\wsp_Sl01_SlicerPlus.png" />
+		<None Remove="Resources\Icons\wsp_Sl03_Re-Trim Printing Paths.png" />
+		<None Remove="Resources\Icons\wsp_Sl04_Trim Printing Paths.png" />
+		<None Remove="Resources\Icons\wsp_Sl05_Orient Printing Paths.png" />
+		<None Remove="Resources\Icons\wsp_Ut01_Move Sliders.png" />
+		<None Remove="Resources\Icons\wsp_Ut02_Write to CSV.png" />
+		<None Remove="Resources\Icons\wsp_Ut03_Read from CSV.png" />
+		<None Remove="Resources\Icons\wsp_Ut04_Read Json.png" />
+		<None Remove="Resources\Icons\wsp_Ut05_Round Number.png" />
+		<None Remove="Resources\Icons\wsp_Ut06_Open URL.png" />
+		<None Remove="Resources\Icons\wsp_Ut07_Install Py Libs.png" />
+		<None Remove="Resources\Icons\wsp_Ut08_ChatGPT v1.png" />
+		<None Remove="Resources\Icons\wsp_Ut09_Write_Excel to Json.png" />
+		<None Remove="Resources\Icons\wsp_Ut10_Save Image from Viewport.png" />
+		<None Remove="Resources\Icons\wsp_Ut11_Cartesian Product.png" />
+		<None Remove="Resources\Icons\wsp_Ut12_Entwine_Reindex.png" />
+		<None Remove="Resources\Icons\wsp_Ut14_Viewport Plane.png" />
+		<None Remove="Resources\Icons\wsp_Da01_Scatter Plot.png" />
+		<None Remove="Resources\Icons\wsp_Da02_Bar Chart.png" />
+		<None Remove="Resources\Icons\wsp_Da03_Box Plot.png" />
+		<None Remove="Resources\Icons\wsp_Da04_Histogram.png" />
+		<None Remove="Resources\Icons\wsp_Da05_Heatmap.png" />
+		<None Remove="Resources\Icons\wsp_Da09_Marker + Line Params.png" />
+		<None Remove="Resources\Icons\wsp_Da10_Chart Axis Params.png" />
+		<None Remove="Resources\Icons\wsp_Da11_Chart Legend Params.png" />
+		<None Remove="Resources\Icons\wsp_Da12_Chart Layout Params.png" />
+		<None Remove="Resources\Icons\wsp_Fa03_Facade Panelling.png" />
+		<None Remove="Resources\Icons\wsp_Fa04_Map UV Cells To Surface.png" />
+		<None Remove="Resources\Icons\wsp_Fa05_Panel Joints (SDF).png" />
+		<None Remove="Resources\Icons\wsp_Fa06_Wave Joints (SDF).png" />
+		<None Remove="Resources\Icons\wsp_Fa06_Random Weighted Tile Panelizer.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- Copy ALL .gh/.ghx examples out of Resources into output root\examples -->
+		<None Remove="Resources\Examples\**\*.gh" />
+		<None Remove="Resources\Examples\**\*.ghx" />
+		<Content Include="Resources\Examples\**\*.gh;Resources\Examples\**\*.ghx">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>examples\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+		</Content>
+
+		<!-- Active .ghuser user objects are synced by SyncActiveGhuserOutput below.
+		     Keep retired/legacy files in Resources\Ghuser_Archive, outside this include. -->
+		<None Remove="Resources\Ghuser\**\*.ghuser" />
+
+		<!-- Copy material library out of Resources into output root\mat_lib -->
+		<None Remove="Resources\Mat_lib\**\*.xlsx" />
+		<Content Include="Resources\Mat_lib\**\*.xlsx">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>mat_lib\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+		</Content>
+
+		<!-- Copy Yak package icon into output root (next to manifest.yml + .gha) -->
+		<None Remove="Resources\Icons\00_WASPer_3DP.png" />
+		<Content Include="Resources\Icons\00_WASPer_3DP.png">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>00_WASPer_3DP.png</TargetPath>
+		</Content>
+	</ItemGroup>
+
+	<!-- Keep generated user-object output in sync with Resources\Ghuser only.
+	     Without this, deleted/archived .ghuser files can linger in bin\...\ghuser. -->
+	<Target Name="SyncActiveGhuserOutput" AfterTargets="Build">
+		<Message Importance="high" Text="SyncActiveGhuserOutput running from Resources\Ghuser to $(TargetDir)ghuser" />
+		<ItemGroup>
+			<_ActiveGhuserFiles Include="$(MSBuildProjectDirectory)\Resources\Ghuser\*.ghuser" />
+			<_GeneratedGhuserOutput Include="$(TargetDir)ghuser\*.ghuser" />
+		</ItemGroup>
+		<MakeDir Directories="$(TargetDir)ghuser" />
+		<Delete Files="@(_GeneratedGhuserOutput)" TreatErrorsAsWarnings="true" />
+		<Copy SourceFiles="@(_ActiveGhuserFiles)" DestinationFolder="$(TargetDir)ghuser\" />
+	</Target>
+
+	<!-- ? Embed files as resources -->
+	<ItemGroup>
+		<EmbeddedResource Include="Components\0.0_WASPer_3DP\WASPer_3DP_structure.txt" />
+		<EmbeddedResource Include="Components\7_Material Library\solid_materials_lib.json" />
+		<EmbeddedResource Include="..\04_WASPer_3DP.XR\07_WebViewer\WASPER_PROCESS_VIEWER_GUIDE.md"
+			Link="Resources\Documentation\WASPER_PROCESS_VIEWER_GUIDE.md"
+			LogicalName="WASPer_3DP.Resources.Documentation.WASPER_PROCESS_VIEWER_GUIDE.md" />
+		<EmbeddedResource Include="Components\0.0_WASPer_3DP\WASPER_WSP_PATH_GUIDE.md"
+			LogicalName="WASPer_3DP.Resources.Documentation.WASPER_WSP_PATH_GUIDE.md" />
+		<!-- Every .png under Resources\Icons is embedded automatically - no need to
+		     hand-list new icons here as components are added. -->
+		<EmbeddedResource Include="Resources\Icons\**\*.png" />
+	</ItemGroup>
+
+	<!-- ? Resource files configuration -->
+	<ItemGroup>
+		<Compile Update="Properties\Resources.Designer.cs">
+			<AutoGen>True</AutoGen>
+			<DesignTime>True</DesignTime>
+			<DependentUpon>Resources.resx</DependentUpon>
+		</Compile>
+	</ItemGroup>
+
+	<!-- ? Components excluded but kept in project -->
+	<ItemGroup>
+		<!-- ?? Ut components pending rewrite ÃƒÂ¯Ã‚Â¿Ã‚Â½ kept in project, not compiled -->
+		<None Include="Components\1.0_Utils\Archive\wsp_Ut12_Entwine Reindex_260220.cs" />
+		<None Include="Components\1.0_Utils\Archive\wsp_Ut13_GH_Canvas_Info.cs" />
+		<None Include="Components\1.0_Utils\Archive\wsp_Ut14_ChatGPT.cs" />
+		<None Include="Components\1.0_Utils\Archive\wsp_Ut14_GH_Mutator.cs" />
+		<None Include="Components\1.0_Utils\Archive\wsp_Ut15_GH AI Bridge.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_Layered Multi-Infill From Curves_archive_20260802_pre_painting_replacement.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_Layered Multi-Infill From Curves_archive_20260805_pre_square_dual_controls.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_Layered Multi-Infill From Curves_archive_20260805_pre_live_pause.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_Layered Multi-Infill From Curves_archive_20260805_pre_multi_select.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_Layered Multi-Infill From Curves_archive_20260805_pre_geometric_clearance.cs" />
+		<None Include="Components\Shared\PatternEditing\Archive\WASPer_GuideWarpEditor_archive_20260805_pre_multi_select.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In06_TPMS from surfaces SDF_test.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260212.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260223.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260312.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260315.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260324.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_gh.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_trial.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In09_TPMS from Slices_260220.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_Turtle Cells_260225.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In09_TPMS from Slices_260224.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In08_TPMS Box Array SDF_archive_20260516_pre_field_normals.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In09_TPMS from surfaces SDF_archive_20260516_pre_field_normals.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In11_Polyhedral Box Array SDF_archive_20260516_pre_field_normals.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In12_Polyhedral Array from Surfaces SDF_archive_20260516_pre_field_normals.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In14_Turtle Cells_archive_20260529_pre_cell_count_warning.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_260324.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_claude.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_claude_v2.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In10_S_from_Slices_gpt.cs" />
+		<None Include="Components\3.1_Infills\Archive\wsp_In06_TPMS from surfaces SDF_260502_preUVT.cs" />
+		<None Include="Resources\Ghuser_Archive\wsp_In01_S Infill 2D.ghuser" />
+		<None Include="Resources\Ghuser_Archive\wsp_In02_Spiral Infill 2D.ghuser" />
+		<None Include="Components\2.2_Fields\wsp_Fi03_Blend Fields_260217.cs" />
+		<None Include="Components\2.2_Fields\wsp_Fi04_Fields to Frames.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc00_Visualize Gcode Path.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc00_Visualize_Gcode_Path_NP_260128.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes_v2.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc01_Points and Fluxes_v3.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc01_PointsAndFluxes_NonPlanar_260124.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc02_FlowFromProximity_gpt.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc02_Ppath Optimization_v1.cs" />
+		<None Include="Components\5.0_Gcode\Archive\wsp_Gc02_Ppath Optimization_v2_251201.cs" />
+		<None Include="Components\3.0_Slicing\Archive\wsp_Sl02_SlicerPlus_260508_preList.cs" />
+		<None Include="Archive_NonCompile\5_Kuka_PRC\**\*.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_250909.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_archive_20260516_pre_precise_filter.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp01_3D Grid_single_archive_20260516_pre_strict_auto_spacing.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_251201.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_archive_20260516_pre_precise_filter.cs" />
+		<None Include="Components\6_Grids of Points\Archive\wsp_Gp02_3D Grid_multi_archive_20260516_pre_strict_auto_spacing.cs" />
+		<None Include="Resources\Templates\wsp_ComponentTemplate.cs" />
+		<!-- Hide archive contents from the normal project view after legacy None includes above. -->
+		<None Remove="Components\**\Archive\**\*" />
+	</ItemGroup>
+	<!-- ? Reference to WASPer_3DP.AI inspection library -->
+	<ItemGroup>
+		<ProjectReference Include="..\02_WASPer_3DP.AI\WASPer_3DP.AI.csproj" />
+		<!-- WSPLINK1 live link. Rhino-free by design, so the same assembly is
+		     referenced by the Gamma receiver and by the headless test suite. -->
+		<ProjectReference Include="..\04_WASPer_3DP.XR\01_LiveLink\WASPer.LiveLink.Protocol\WASPer.LiveLink.Protocol.csproj" />
+	</ItemGroup>
+
+	<!-- Rhino/Grasshopper compile references are package-provided and excluded at runtime. -->
+	<!--		
+	< ? References to RhinoCommon & Grasshopper
+	<ItemGroup>
+		<Reference Include="GH_IO">
+			<HintPath>C:\Program Files\Rhino 8\Plug-ins\Grasshopper\GH_IO.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="RhinoCommon">
+			<HintPath>C:\Program Files\Rhino 8\System\RhinoCommon.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+		<Reference Include="Grasshopper">
+			<HintPath>C:\Program Files\Rhino 8\Plug-ins\Grasshopper\Grasshopper.dll</HintPath>
+			<Private>false</Private>
+		</Reference>
+	</ItemGroup>
+	-->
+	<!-- ? External NuGet packages -->
+	<ItemGroup>
+		<PackageReference Include="ClosedXML" Version="0.104.2" />
+		<PackageReference Include="DocumentFormat.OpenXml" Version="3.3.0" />
+		<PackageReference Include="Grasshopper" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="RhinoCommon" Version="8.21.25188.17001" ExcludeAssets="runtime" />
+		<!-- Match the .NET-era System.Drawing dependency required by RhinoCommon. -->
+		<PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+		<!-- M6 (Mobile and QR Connection, 2026-08-19): renders the QR code shown in Sm01's
+		     Process Viewer tab. MIT licensed, no further dependencies beyond
+		     System.Drawing.Common (already referenced above) for the Bitmap renderer used here. -->
+		<PackageReference Include="QRCoder" Version="1.8.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Resources\Ghuser\" />
+	  <Folder Include="Resources\Mat_lib\" />
+	</ItemGroup>				
+	<!-- UseWindowsForms intentionally omitted: Grasshopper.dll brings in all WinForms
+	     compatibility types (ToolStripDropDown, PointF, etc.) transitively on both
+	     Windows and Mac. Explicit UseWindowsForms requires net7.0-windows TFM. -->
+
+</Project>

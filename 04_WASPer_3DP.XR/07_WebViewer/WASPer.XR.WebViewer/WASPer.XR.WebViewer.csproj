@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>WASPer.XR.WebViewer</RootNamespace>
+    <AssemblyName>WASPer.XR.WebViewer</AssemblyName>
+    <Description>M2 static browser viewer host: serves the three.js viewer page from wwwroot and a /api/job endpoint built on WASPer.XR.Core. No WebSocket/live connection yet -- that is M5, in 06_Transport.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\05_Core\WASPer.XR.Core\WASPer.XR.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="SampleData\wasper-xr-sample.wasperxr.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,177 @@
+### Grasshopper / Rhino / WASPer_3DP plugin ignore rules ###
+
+# OS / file-manager clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Grasshopper user objects, autosave junk
+*.ghx-autosave
+*.ghautosave
+*.ghbackup
+
+# WASPer generated simulation/cache outputs
+*.mb05cache
+**/WASPer_Mb05_Cache/
+*.cache
+**/graphs_temp/
+
+# Compiled Grasshopper assemblies
+*.gha
+*.ghlib
+
+# Avoid committing Yak build output
+# Versioned Yak package folders (treat as build artefacts)
+v1.*/
+*.yak
+yak_dist/
+
+# Avoid committing local release folders
+00_Backup/
+food_for_rhino/
+package_manager/
+
+# Local Grasshopper definition backups (if large)
+WASPer_3DP_WIP*.gh
+~*.gh
+~*.ghuser
+
+# VS - Bin and Obj are already ignored above, but add explicitly:
+bin/
+obj/
+.vs/
+**/.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Rhino temp
+*.3dm.autosave
+*.rui_bak
+*.rhp
+*.rhl
+*.rws
+
+# Mac Rhino temp (safe to include)
+*.MacOS
+
+# Logs / local test output
+*.log
+TestResults/
+*.trx
+
+# Python cache if you use GHPython in-source
+**/__pycache__/
+*.pyc
+.venv/
+.venvs/
+**/.venv/
+**/.venvs/
+
+# Don't commit local build resources, source archives, or viewer output
+**/*Archive*/
+*.Backup.tmp
+05_VVVV/**/build/
+05_VVVV/**/.wasper-viewer/
+05_VVVV/WASPerProcessViewer/config/current-job.txt
+
+# Most local XR / VVVV experiments are not part of the public WASPer_3DP source release.
+# The Phase 1 build dependencies are explicitly unignored below; unrelated viewers,
+# experiments, and third-party samples remain private.
+# Keep experimental XR workspaces private, but publish the three projects required
+# to build the Phase 1 plugin and its bundled browser viewer from a clean clone.
+04_WASPer_3DP.XR/*
+!04_WASPer_3DP.XR/01_LiveLink/
+04_WASPer_3DP.XR/01_LiveLink/*
+!04_WASPer_3DP.XR/01_LiveLink/WASPer.LiveLink.Protocol/
+!04_WASPer_3DP.XR/01_LiveLink/WASPer.LiveLink.Protocol/**
+04_WASPer_3DP.XR/01_LiveLink/WASPer.LiveLink.Protocol/bin/
+04_WASPer_3DP.XR/01_LiveLink/WASPer.LiveLink.Protocol/obj/
+!04_WASPer_3DP.XR/05_Core/
+04_WASPer_3DP.XR/05_Core/*
+!04_WASPer_3DP.XR/05_Core/WASPer.XR.Core/
+!04_WASPer_3DP.XR/05_Core/WASPer.XR.Core/**
+04_WASPer_3DP.XR/05_Core/WASPer.XR.Core/bin/
+04_WASPer_3DP.XR/05_Core/WASPer.XR.Core/obj/
+!04_WASPer_3DP.XR/07_WebViewer/
+04_WASPer_3DP.XR/07_WebViewer/*
+!04_WASPer_3DP.XR/07_WebViewer/WASPER_PROCESS_VIEWER_GUIDE.md
+!04_WASPer_3DP.XR/07_WebViewer/scripts/
+!04_WASPer_3DP.XR/07_WebViewer/scripts/**
+!04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/
+!04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/**
+04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/bin/
+04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/obj/
+04_WASPer_3DP.XR_Structure.txt
+05_VVVV/
+**/*.vl.bak*
+**/*.vl.overwritten_by_vvvv_*
+**/*.psmdcp
+
+# Local temporary investigations and copied package contents
+tmp/
+**/VL.Rhino.EDU.*/
+**/VL.Rhino.3dm.*/
+
+# Local plans, trials, backups, and conversion snapshots
+00_Plans/
+00_Trials/
+Trials/
+00_WASPer_ChangeLog.txt
+00_Backups*/
+01_WASPer_3DP/00_Backups/
+**/_cp1252_to_utf8_backup_*/
+**/_mojibake_backup_*/
+
+# Generated XR packages and study payloads can be very large and are not source.
+*.wasperxr
+*.wasperxr.json
+*.3dmbak
+*.3dm
+*.vsidx
+
+# Phase 1 WebViewer ships one source-controlled sample job; all other generated
+# WASPer XR payloads remain ignored.
+!04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/SampleData/wasper-xr-sample.wasperxr.json
+04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer/wwwroot/_extracted.js
+
+# Phase 1 public-source boundary. The private Performance project (categories 8-9.3:
+# morphology, boundary conditions, heat transfer, moisture buffering, structural) lives
+# here and stays outside the public repository until Phase 2.
+05_WASPer_3DP.Performance/
+01_WASPer_3DP/WASPer_3DP.Private.sln
+
+# Defensive: keep these ignored even if a maintainer ever restores Performance-only
+# files next to the public source at their old (pre-split) locations.
+01_WASPer_3DP/Components/8_Morphology/
+01_WASPer_3DP/Components/9.0_BCs/
+01_WASPer_3DP/Components/9.1_Heat Transfer/
+01_WASPer_3DP/Components/9.2_Moisture_Buffering/
+01_WASPer_3DP/Components/9.3_Structural/
+01_WASPer_3DP/Components/Shared/Performance/WASPer_BoundaryTypes.cs
+01_WASPer_3DP/Components/Shared/Performance/WASPer_MoistureDiffusionSolver.cs
+01_WASPer_3DP/Components/Shared/Performance/WASPer_NstSimParams.cs
+01_WASPer_3DP/Components/Shared/Performance/WASPer_GridSparseSolver.cs
+01_WASPer_3DP/Components/Shared/Performance/WASPer_ThermalCommon.cs
+# Maintained Phase 1 reference example. It remains public even though the full
+# Performance component source is withheld until Phase 2.
+!01_WASPer_3DP/Resources/Examples/HeatTransferNew_260622.gh
+01_WASPer_3DP/Resources/Icons/16_heat_trasnfer.png
+01_WASPer_3DP/Resources/Icons/17_surface_area.png
+01_WASPer_3DP/Resources/Icons/18_Tortuosity.png
+01_WASPer_3DP/Resources/Icons/wsp_BC*.png
+01_WASPer_3DP/Resources/Icons/wsp_Ch*.png
+01_WASPer_3DP/Resources/Icons/wsp_Ht*.png
+01_WASPer_3DP/Resources/Icons/wsp_Mb*.png
+01_WASPer_3DP/Resources/Icons/wsp_St*.png
+01_WASPer_3DP/Tools/TensorMesh/
+# The exact Rhino/Grasshopper 8.17 reference assemblies below are intentional
+# public build dependencies. Keep every other future ThirdParty payload ignored.
+01_WASPer_3DP/ThirdParty/*
+!01_WASPer_3DP/ThirdParty/GH817/
+01_WASPer_3DP/ThirdParty/GH817/*
+!01_WASPer_3DP/ThirdParty/GH817/GH_IO.dll
+!01_WASPer_3DP/ThirdParty/GH817/Grasshopper.dll
+!01_WASPer_3DP/ThirdParty/GH817/RhinoCommon.dll

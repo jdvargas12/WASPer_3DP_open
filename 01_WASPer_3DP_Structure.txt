@@ -1,0 +1,134 @@
+WASPer_3DP PHASE 1 SOURCE STRUCTURE
+===================================
+
+Purpose
+-------
+This map describes the source included in the first open-source phase of WASPer_3DP.
+The publication boundary is machine-readable in `00_OpenSource/phase1-boundary.json`
+and validated by `00_OpenSource/Test-Phase1Boundary.ps1`.
+
+Projects
+--------
+- 01_WASPer_3DP/WASPer_3DP.csproj
+  Main Rhino 8 / Grasshopper plugin and package resources.
+- 02_WASPer_3DP.AI/WASPer_3DP.AI.csproj
+  Grasshopper inspection and controlled bridge support used by selected utilities.
+- 03_WASPer_3DP.Robots/WASPer_3DP.Robots.csproj
+  Optional Robots-dependent target, KUKA, and post-processing components.
+- 04_WASPer_3DP.XR/01_LiveLink/WASPer.LiveLink.Protocol
+  Dependency-free shared-memory protocol used by the main plugin.
+- 04_WASPer_3DP.XR/05_Core/WASPer.XR.Core
+  Platform-neutral process-viewer data models and package import.
+- 04_WASPer_3DP.XR/07_WebViewer/WASPer.XR.WebViewer
+  Local browser Process Viewer bundled by Release builds.
+
+Main component categories
+-------------------------
+- Components/0.0_WASPer_3DP
+  Plugin information, WASPet, workflow map, display settings, and packaged examples.
+- Components/1.0_Utils
+  Data exchange, document inspection, viewport, and general utilities.
+- Components/1.1_Data Vis
+  Native charting and multivariate visualization.
+- Components/1.2_Studies
+  Study Manager, KPI wrappers, study execution, exports, and reports.
+- Components/2.0_Geometry
+  Geometry preparation, projection, mesh, bitmap, and painting tools.
+- Components/2.1_Facades
+  Panelization, joints, weighted layouts, and facade geometry.
+- Components/2.2_Fields
+  Two-dimensional scalar and distance fields.
+- Components/2.3_Fields_3D
+  Volumetric fields, operations, conversion, and meshing.
+- Components/3.0_Slicing
+  Planar, non-planar, trimming, orientation, and path visualization workflows.
+- Components/3.1_Infills
+  Two- and three-dimensional infill generation.
+- Components/4.0_Print Paths
+  `wsp_path` construction, roles, process values, transformation, and visualization.
+- Components/4.1_Printability
+  Fabrication-oriented geometric checks and early-stage risk proxies.
+- Components/5.0_Gcode
+  Marlin G-code generation, parsing, saving, and process simulation.
+- Components/6_Grids of Points
+  Structured point grids and geometry-oriented grid utilities.
+- Components/7_Material Library
+  Material, layer, gas, moisture-transport property, and printing-property records.
+
+Shared source
+-------------
+- Components/Shared/Core
+  Assembly-wide properties and Grasshopper palette constants.
+- Components/Shared/Fabrication
+  Infill, layer, G-code, print-path, preview, shading, and cache contracts.
+- Components/Shared/Fields
+  Field models, operations, rasterization, bridges, meshing, and preview rendering.
+- Components/Shared/Geometry
+  Frame, plane, role, trimming, and path-replacement helpers.
+- Components/Shared/Kpi
+  Structured KPI records, sets, Grasshopper wrappers, and serialization.
+- Components/Shared/LiveLink
+  Platform-neutral geometry and path publication adapters.
+- Components/Shared/Painting
+  Painter state, persistence, display, texture, and Eto UI infrastructure.
+- Components/Shared/PatternEditing
+  Pattern-editor and seam metadata helpers, plus (2026-08-31) an additive Eto.Forms port of the
+  shared Guide Warp / Shell Seam editor windows and canvases (WASPer_PatternEditingEtoUI.cs),
+  wired into its two consumers (In10, Pp01) alongside the still-present WinForms originals.
+- Components/Shared/Performance/WASPer_GridTools.cs
+  Rounded grid keys, spacing detection, and neighbor lookup used by category 6.
+- Components/Shared/Performance/WASPer_MaterialTypes.cs
+  Public material and layer data used by category 7 and fabrication workflows.
+- Components/Shared/Performance/WASPer_MoistureTransportTypes.cs
+  Public vapor-transport property records used by category 7.
+- Components/Shared/Studies
+  Study catalog, data contracts, PDF reports, and viewport capture.
+- Components/Shared/Visualization
+  Chart renderers, interaction, settings, and point-field color mapping.
+- Components/Shared/Xr
+  Platform-neutral scene models used at the plugin boundary.
+
+Resources
+---------
+- Resources/Examples
+  Maintained Grasshopper definitions copied into release packages.
+- Resources/Ghuser
+  Active user objects copied into release packages.
+- Resources/Icons
+  Plugin and Phase 1 component icons embedded by the main assembly.
+- Resources/Mat_lib
+  Material-library workbook copied into release packages.
+- Resources/Templates
+  Local component template excluded from compilation.
+
+Release infrastructure
+----------------------
+- 00_Release/WASPer.Version.props
+  Reads the four-part version from the package manifest header.
+- 00_Release/WASPer-ReleaseBuilder.ps1
+  Maintainer-facing version and publication-root dialog.
+- 00_Release/Stage-ReleasePackages.ps1
+  Produces Package Manager and food4Rhino layouts from Release outputs.
+
+Phase 1 boundary
+----------------
+The following research categories are deliberately absent from the public source tree:
+- 8_Morphology
+- 9.0_BCs
+- 9.1_Heat Transfer
+- 9.2_Moisture_Buffering
+- 9.3_Structural
+
+Their private-only shared solvers, boundary models, dedicated icons, examples, and
+TensorMesh research scripts are also absent. Public material, grid, visualization,
+and moisture-transport records remain when they are consumed by Phase 1 components.
+
+Build and validation
+--------------------
+From the repository root:
+
+  powershell -ExecutionPolicy Bypass -File 00_OpenSource/Test-Phase1Boundary.ps1
+  dotnet build 01_WASPer_3DP/WASPer_3DP.csproj --no-restore
+
+Preserve existing Grasshopper component GUIDs. Generated build outputs, packages,
+archives, backups, trials, plans, and private publication destinations remain outside Git.

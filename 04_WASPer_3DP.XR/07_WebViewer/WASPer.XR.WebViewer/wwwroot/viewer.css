@@ -1,0 +1,463 @@
+  html, body { margin: 0; height: 100%; background: #14151a; overflow: hidden;
+    overscroll-behavior: none; touch-action: none;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #e8e8ee; }
+  /* touch-action: none keeps the browser's own scroll/pinch-zoom/double-tap-zoom gestures from
+     fighting OrbitControls' own touch handling over the 3D canvas (one-finger orbit, two-finger
+     pinch/pan) -- without it, mobile Safari/Chrome intercept those same gestures for page zoom
+     and scrolling first, and OrbitControls either never sees them or sees them fighting the
+     browser's own gesture recognizer. */
+  #viewport { position: fixed; inset: 0; touch-action: none; }
+  #hud { position: fixed; top: 14px; left: 14px; padding: 12px 16px; width: 280px; min-width: 220px;
+    max-width: min(70vw, 640px); box-sizing: border-box;
+    background: rgba(20,21,26,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; font-size: 13px; line-height: 1.55; backdrop-filter: blur(6px); }
+  /* Draggable width (added 2026-08-19, after real-world KPI values like "Flow direction"'s
+     descriptive string turned out to be far wider than any fixed panel width reads comfortably
+     for): an explicit width above (rather than the old content-driven auto width, which let a
+     single very long row silently stretch the whole panel) plus this handle on the right edge,
+     dragged via JS (see hudResizeHandle below) to resize #hud.style.width directly. Positioned
+     just outside the padding box so it doesn't eat into KPI row spacing; #hud needs no explicit
+     position:relative of its own for this to anchor to it -- position:fixed already establishes
+     a containing block for absolutely-positioned children the same way. Hidden on mobile (see
+     media query below) -- there #hud already spans edge-to-edge via left/right insets, a fixed
+     px width and a drag handle would just fight that. */
+  #hudResizeHandle { position: absolute; top: 0; right: -5px; width: 10px; height: 100%;
+    cursor: ew-resize; z-index: 1; touch-action: none; }
+  #hud h1 { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #fff; }
+  /* M5 live link status dot + label, next to the job title. */
+  #liveStatus { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px;
+    font-size: 10px; font-weight: 500; color: #6f6f7e; vertical-align: middle; }
+  #liveStatus::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: #6f6f7e; }
+  #liveStatus.live-connecting::before { background: #d8a83c; }
+  #liveStatus.live-connected::before { background: #3cc26a; }
+  #liveStatus.live-disconnected::before { background: #6f6f7e; }
+  #hud .row { display: flex; justify-content: space-between; gap: 18px; }
+  #hud .row span:first-child { color: #9a9aa8; }
+  #paletteControl { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+  #paletteControl label { color: #9a9aa8; }
+  #paletteSelect { min-width: 0; max-width: 180px; padding: 4px 24px 4px 7px;
+    color: #e8e8ee; background: #292a31; border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 5px; font: inherit; cursor: pointer; }
+  #legend { margin-top: 7px; }
+  #legend .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; }
+  #legend .row { cursor: pointer; user-select: none; }
+  #legend .row.hidden { opacity: 0.35; }
+  #legend .eyeToggle { display: inline-block; width: 14px; text-align: center; margin-right: 5px;
+    font-size: 11px; }
+  #kpiPanel { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); }
+  #kpiHeader { cursor: pointer; user-select: none; color: #9a9aa8; }
+  #kpiHeader:hover { color: #e8e8ee; }
+  #kpiChevron { display: inline-block; transition: transform 0.12s ease; font-size: 10px; }
+  #kpiPanel.expanded #kpiChevron { transform: rotate(90deg); }
+  /* touch-action: pan-y overrides body's own touch-action: none (added for the 3D viewport,
+     see #viewport above) so a finger drag inside this scrollable panel still scrolls it on
+     touch devices instead of being swallowed by the page-level "no gestures" rule. */
+  #kpiBody { display: none; max-height: 260px; overflow-y: auto; margin-top: 4px;
+    touch-action: pan-y; }
+  #kpiPanel.expanded #kpiBody { display: block; }
+  #kpiBody .kpiGroup { color: #6f6f7e; font-size: 10px; text-transform: uppercase;
+    letter-spacing: 0.04em; margin: 6px 0 2px; }
+  #kpiBody .kpiGroup:first-child { margin-top: 0; }
+  #kpiBody .row span:first-child { color: #b6b6c2; }
+  /* Wrapping (added 2026-08-19): some KPI values -- e.g. "Flow direction"'s descriptive string
+     ("non-parallel (Y-,X-) [align=0.84] | hot=bc1->cold=bc2 | ...") -- are far wider than a
+     one-line label/value row reads comfortably at any reasonable panel width. #hud .row's default
+     (single line, no shrink -- fine for the short top stat rows) forced these onto one very long
+     line that either overflowed #hud or silently stretched it wide, which is what the draggable
+     width above is a *manual* fix for; this is the automatic one, scoped to KPI rows specifically
+     (not the top stat rows or #legend, both always short) so either the label or the value wraps
+     onto a second line instead. flex-basis caps the value column at 55% so it can't dominate the
+     row and push the label off; min-width:0 is required on both -- flex items default to
+     min-width:auto (their unwrapped content size), which would silently defeat the wrapping. */
+  #kpiBody .row { align-items: flex-start; }
+  #kpiBody .row span:first-child { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  #kpiBody .row span:last-child { flex: 0 1 55%; min-width: 0; text-align: right;
+    white-space: normal; overflow-wrap: anywhere; }
+  #kpiEmpty { color: #6f6f7e; font-size: 11px; display: none; }
+  #loadFile { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; gap: 6px; }
+  #loadFile input { flex: 1; min-width: 0; background: rgba(255,255,255,0.06); color: #e8e8ee;
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 5px; padding: 5px 7px; font-size: 11px; }
+  #loadFile button { padding: 5px 10px; }
+  #loadError { color: #ff8a8a; font-size: 11px; margin-top: 4px; display: none; }
+  #controls { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; align-items: center; }
+  #modeGroup { display: flex; gap: 2px; background: rgba(20,21,26,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px; padding: 2px; }
+  #modeGroup button { border: none; border-radius: 4px; background: transparent; }
+  #modeGroup button.active { background: rgba(255,255,255,0.18); color: #fff; }
+  #meshQuality { min-width: 86px; border: none; border-left: 1px solid rgba(255,255,255,0.10);
+    border-radius: 0 4px 4px 0; background: rgba(255,255,255,0.06); color: #e8e8ee;
+    padding: 6px 24px 6px 8px; font-size: 11px; cursor: pointer; }
+  #meshQuality:focus-visible { outline: 1px solid rgba(255,255,255,0.55); outline-offset: 1px; }
+  #meshQuality option { background: #202127; color: #e8e8ee; }
+  button { background: rgba(255,255,255,0.08); color: #e8e8ee; border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 6px; padding: 7px 12px; font-size: 12px; cursor: pointer; }
+  button:hover { background: rgba(255,255,255,0.16); }
+  #status { position: fixed; bottom: 14px; left: 14px; font-size: 11px; color: #6f6f7e; }
+  #timeline { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: none; align-items: center; gap: 8px; padding: 10px 16px;
+    background: rgba(20,21,26,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; backdrop-filter: blur(6px); min-width: 460px; }
+  #timeline.visible { display: flex; }
+  #timeline input[type="range"] { flex: 1; }
+  #timeline #timeSlider { flex: 3; }
+  #timeline #speedSlider { flex: 1; min-width: 70px; }
+  #timeline .readout { font-size: 11px; color: #9a9aa8; text-align: right; font-variant-numeric: tabular-nums; }
+  #timeline #timeReadout { min-width: 90px; }
+  #timeline #speedReadout { min-width: 40px; }
+  #timeline .playbackButton { padding: 6px 9px; font-size: 13px; line-height: 1; }
+  /* Shown instead of #timeline when the job's metadata.disablePlayback flag is set (Sm05 XR
+     Scene Params' sim_par is connected, added 2026-08-19) -- an external source already owns
+     the simulated print position, so the local Play/Stop/time-slider controls are hidden
+     rather than run a second, conflicting clock. */
+  #externalPlaybackNote { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: none; padding: 8px 14px; font-size: 11px; color: #9a9aa8;
+    background: rgba(20,21,26,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; backdrop-filter: blur(6px); }
+
+  /* ---- M9 (WebXR, first pass -- AR only, added 2026-08-19) ---- */
+  /* bottom-left (the otherwise-mostly-empty #status corner), not bottom-center: #timeline sits
+     there too (also bottom:14px, also centered) and, being later in the DOM, would paint over
+     this button whenever the timeline is visible -- found and fixed same day, before it ever
+     shipped silently unreachable.
+
+     Wraps arButton (Enter/Exit AR) and arShowUiButton (below) as a column so "under Exit AR" (a
+     later request, same day) is just DOM order -- arButton first, arShowUiButton second -- rather
+     than two independently-positioned elements that would need their own hand-tuned offset to
+     stack correctly in both the desktop and mobile position. The wrapper itself carries the
+     position/bottom/left that #arButton used to have alone; the buttons inside are unpositioned
+     flex items.
+
+     Position itself reworked 2026-08-19 (follow-up feedback), then reworked again the same day
+     after real-device testing found the first rework caused a new overlap bug: idle (below):
+     docked above #controls' own row, right where the Full UI/Simple UI toggle (#toggleUiButton,
+     that row's first child) sits, since Enter AR is the thing you tap *before* anything
+     AR-specific is happening, so it reads as one more page-chrome control, not a separate
+     floating button. Active (further below): moves toward the bottom of the screen, per
+     feedback, but DELIBERATELY does not try to share #controls'/#modeGroup's own baseline/corner
+     -- an earlier attempt at that (plus physically moving Hide UI into #modeGroup's row) caused
+     Exit AR to visually land exactly on top of Hide UI once Hide UI had been moved out from under
+     it, since #arControls would then collapse to its one remaining child at the shared baseline.
+     Reverted: Hide UI now always stays inside #arControls, stacked with Exit AR exactly as in the
+     idle state, and the active position is chosen with enough clearance to never overlap
+     #controls/#modeGroup regardless of which children #arControls currently has. */
+  #arControls { position: fixed; top: 14px; right: 14px; z-index: 20;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+  /* #controls reserves the row #arControls docks into above it in the idle state -- see the
+     body.ar-supported comment near arButton's feature-detection code in the script for why this
+     is conditional (not reserved for browsers that can never show AR at all). #controls itself
+     does NOT move once a session goes active (see #arControls' own comment above for why) -- it
+     stays right here, in both idle and active states, on desktop.
+
+     min-width:641px guard added after a real bug found on-device (2026-08-19): without it, this
+     rule's extra class-selector specificity (body.ar-supported plus the id) beats the mobile
+     media query's plain #controls selector regardless of source order -- CSS specificity wins
+     over "which media query" when both match -- so on a phone #controls ended up with both this
+     top:54px AND the mobile block's bottom:210px applied at once, stretching it into one tall box
+     spanning most of the screen with its content rendering nowhere near the intended
+     just-above-the-timeline position. Desktop-only here; mobile's own #controls position (see the
+     @media (max-width:640px) block below) needs no equivalent override -- it was already
+     bottom-anchored, so there's no "reserve room above it" adjustment to make there. */
+  @media (min-width: 641px) {
+    body.ar-supported #controls { top: 54px; }
+    /* Bottom-right, clearing #controls' own top-right corner (top:54px, ends well short of the
+       bottom of most viewports) by construction rather than by matching/negotiating with it --
+       see #arControls' own comment above for why an exact-baseline-match was abandoned. */
+    body.ar-active #arControls { top: auto; bottom: 14px; }
+  }
+  #arButton { padding: 10px 20px; font-size: 13px; font-weight: 600;
+    background: rgba(77,163,255,0.85); border-color: rgba(77,163,255,1); color: #fff; }
+  #arButton:hover { background: rgba(77,163,255,1); }
+  /* Only meaningful during a live session (toggling desktop-style controls back into an AR view)
+     -- hidden the rest of the time via body.ar-active the same way #arOverlay is below, rather
+     than a separate JS-driven show/hide of its own. */
+  #arShowUiButton { display: none; }
+  body.ar-active #arShowUiButton { display: block; }
+
+  /* AR-only overlay panel (hint text + scale/rotate sliders), added 2026-08-19 alongside the
+     WebXR 'dom-overlay' feature request (see requestSession below) -- without dom-overlay, regular
+     page DOM is not guaranteed to be composited over the camera passthrough at all during an
+     immersive session, so until now nothing here was reachable mid-session except arButton itself.
+     A small, separate panel rather than exposing the whole page: none of the desktop/mobile HUD
+     (KPI panel, load-file box, etc.) makes sense floating over a phone camera feed. If a browser/
+     device supports immersive-ar but not dom-overlay, this markup simply never becomes visible
+     (body.ar-active's rule below never gets a chance to show it) -- no error, and tap-to-place/
+     pinch-to-resize (both plain touch events on the canvas, independent of dom-overlay) keep
+     working exactly as before.
+
+     Bottom-right corner (opposite #arControls' bottom-left) -- vertical sliders per feedback
+     2026-08-19, so a thumb resting near the corner can drag straight up/down without reaching
+     across the screen. Its base bottom offset (see the calc() below) is its position with Show UI
+     off (nothing else occupies that corner then); with Show UI on, #timeline/#controls reappear
+     at the bottom (see the :not(.ar-ui-visible) rule below) and would run into it there, so it's
+     nudged further up -- see the body.ar-active.ar-ui-visible rule right after that one, and its
+     own mobile-media-query override for the much taller wrapped #timeline+#controls case.
+
+     Base offset widened from a flat 14px, 2026-08-19 (same-day follow-up: "this can generate
+     conflicts with the cellphone screen itself") -- 14px sat flush against the very bottom edge,
+     which on a real phone can land right under the OS's own on-screen gesture-navigation bar,
+     making Confirm/Place Object/the sliders awkward or impossible to reach with a thumb. env(
+     safe-area-inset-bottom) is the standard way a page asks the browser how much of the bottom
+     edge the OS chrome is actually covering; max() falls back to a flat 28px of its own on
+     browsers/contexts that report 0 (or don't support it at all) rather than trusting env() alone
+     -- unclear whether it's even populated correctly inside a WebXR dom-overlay's immersive
+     presentation the same way it is on a normal page, so this doesn't rely on it exclusively. */
+  #arOverlay { display: none; }
+  body.ar-active #arOverlay { display: flex; flex-direction: column; align-items: center; gap: 8px;
+    position: fixed; bottom: max(28px, env(safe-area-inset-bottom, 28px)); right: 14px; z-index: 20;
+    background: rgba(20,21,26,0.72); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(6px); }
+  #arHint { font-size: 12px; color: #e8e8ee; text-align: center; max-width: 130px; }
+  /* M10 spatial registration (2026-08-19) -- same button styling as the rest of this panel's
+     controls, just a plain block button rather than a slider since it's a discrete action/mode
+     toggle, not a continuous value. Text itself communicates state (Calibrate / Cancel
+     Calibration / Clear Calibration), see startCalibration/cancelCalibration in the script. */
+  #arCalibrateButton { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08); color: #e8e8ee; }
+  #arCalibrateButton.active { background: #4da3ff; color: #101116; border-color: #4da3ff; }
+  /* Fit-to-Screen toggle (2026-08-19 follow-up) -- same neutral/active pattern as
+     arCalibrateButton just above, active meaning "auto-fit is on" rather than "true scale". */
+  #arFitScreenButton { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.08); color: #e8e8ee; }
+  #arFitScreenButton.active { background: #4da3ff; color: #101116; border-color: #4da3ff; }
+  /* Blue (matches arButton's accent) to read as the positive, finishing action alongside
+     arCalibrateButton's neutral "Cancel" -- 2026-08-19. */
+  #arPlaceObjectButton { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(77,163,255,1);
+    background: rgba(77,163,255,0.85); color: #fff; font-weight: 600; }
+  #arSliders { display: flex; flex-direction: row; gap: 16px; align-items: flex-end; }
+  #arScaleRow, #arRotateRow { display: flex; flex-direction: column; align-items: center; gap: 6px;
+    font-size: 11px; color: #9a9aa8; }
+  /* writing-mode + direction:rtl is the standard way to turn a normal (horizontal) range input
+     vertical -- the old -webkit-appearance:slider-vertical was removed from Chrome; this is its
+     replacement and works the same in both Chrome and Firefox. direction:rtl keeps min at the
+     bottom / max at the top (drag up to increase), matching how a physical vertical slider reads. */
+  #arScaleRow input[type="range"], #arRotateRow input[type="range"] {
+    writing-mode: vertical-lr; direction: rtl; width: 22px; height: 120px; }
+  /* Collapse toggle (2026-08-19 follow-up, "gets a bit invasive"): shrinks #arOverlay down to
+     just this one small button, hiding the hint text, Calibrate/Confirm/Place Object buttons, and
+     the scale/rotate sliders -- all of which together can cover a real chunk of a phone screen,
+     right over the surface someone's actually trying to look at. self-align end (right, matching
+     #arOverlay's own right-side dock) so it reads as this panel's own control, not an unrelated
+     floating button. */
+  #arCollapseButton { align-self: flex-end; font-size: 11px; padding: 3px 9px; line-height: 1.4; }
+  #arOverlay.collapsed { padding: 6px 8px; gap: 0; }
+  #arOverlay.collapsed > *:not(#arCollapseButton) { display: none !important; }
+
+  /* Once an immersive-ar session is live, the desktop/mobile HUD chrome (KPI panel, mode
+     toggles, timeline, static-viewer status line) has no sensible place to be layered over a
+     phone's live camera passthrough -- hidden wholesale rather than trying to restyle each one
+     for an AR overlay. #arControls and #arOverlay (above) both stay visible (this class doesn't
+     touch either) since exiting the session depends on being able to tap arButton, and arOverlay
+     is the whole point of requesting dom-overlay in the first place.
+
+     :not(.ar-ui-visible) added 2026-08-19 (AR "Show UI" follow-up): #status stays hidden either
+     way -- it's redundant with #hud's own header/legend even on desktop -- but the other four are
+     carved out so arShowUiButton (above) can un-hide them; see the body.ar-active.ar-ui-visible
+     rules right after body.simple-ui's for what actually renders once they're back. */
+  body.ar-active:not(.ar-ui-visible) #hud, body.ar-active:not(.ar-ui-visible) #controls,
+  body.ar-active:not(.ar-ui-visible) #timeline, body.ar-active:not(.ar-ui-visible) #externalPlaybackNote,
+  body.ar-active #status { display: none !important; }
+
+  /* "Simple UI" (added 2026-08-19, renamed from "Hide UI", scope narrowed same day, and made the
+     default on phone screens + given a full-screen KPIs panel a few days later -- see loadJob's
+     auto-simple-ui check and #kpiFullOverlay below): unlike body.ar-active above, this is NOT a
+     wholesale hide -- the job title (#jobTitle, name + live-status dot -- exempted later than the
+     rest, once phones started defaulting into this mode and losing the title entirely stopped
+     being acceptable), playback (#timeline/#externalPlaybackNote), the Path/Mesh/BBox toggles
+     (#modeGroup), the role/legend eye-toggles (#legend), and the new KPIs button
+     (#openKpisButton, opens #kpiFullOverlay instead of the small inline panel -- too much text to
+     read comfortably crammed in next to the 3D view on a phone) all stay visible; only the
+     Branches/Segments/stats block, the inline KPI panel, the load-file box, the profile dropdown,
+     and Reset Camera actually go away. Implemented as "hide every child except the ones named" on
+     #hud and #controls individually, rather than hiding either container wholesale, so the
+     still-wanted pieces keep rendering in their normal spot within each panel. toggleUiButton
+     itself is always spared so it stays reachable to switch back. */
+  body.simple-ui #hud > *:not(#paletteControl):not(#legend):not(#jobTitle):not(#openKpisButton) { display: none !important; }
+  body.simple-ui #legend { margin-top: 0; padding-top: 0; border-top: none; } /* no orphaned rule line with nothing above it now that the stats block is gone */
+  body.simple-ui #controls > *:not(#toggleUiButton):not(#modeGroup) { display: none !important; }
+  body.simple-ui #status { display: none !important; }
+
+  /* AR "Show UI" (added 2026-08-19): once body.ar-active:not(.ar-ui-visible) above stops force-
+     hiding #hud/#controls/#timeline/#externalPlaybackNote, #timeline and #externalPlaybackNote
+     fall back to their own normal JS-driven state (the .visible class / inline style that already
+     decide playback-vs-external-note on desktop, untouched here) -- only #hud and #controls need
+     an explicit restriction, down to the exact same subset Simple UI shows on desktop (role
+     eye-toggles, Path/Mesh), since the rest (KPI panel, load-file box, profile dropdown, Reset
+     Camera) has even less reason to exist over a live camera feed than it does on desktop. Kept
+     independent of body.simple-ui (its own toggle, not reused here) so switching one doesn't
+     silently flip the other for the next desktop or AR session. */
+  body.ar-active.ar-ui-visible #hud > *:not(#paletteControl):not(#legend):not(#jobTitle):not(#openKpisButton) { display: none !important; }
+  body.ar-active.ar-ui-visible #legend { margin-top: 0; padding-top: 0; border-top: none; }
+  body.ar-active.ar-ui-visible #controls > *:not(#modeGroup) { display: none !important; }
+
+  /* #openKpisButton (opens #kpiFullOverlay, below): hidden by default -- Full UI/desktop keeps
+     the inline #kpiPanel instead (still there, untouched) -- and only actually shown in the two
+     contexts that just spared it from being force-hidden above, matching normal cascade
+     specificity (body.simple-ui #openKpisButton beats the bare #openKpisButton rule) rather than
+     needing !important here too. */
+  #openKpisButton { display: none; width: 100%; margin-top: 8px; }
+  body.simple-ui #openKpisButton, body.ar-active.ar-ui-visible #openKpisButton { display: block; }
+
+  /* #arOverlay's own bottom:14px (above) has nothing to clear when Show UI is off. Once it brings
+     #timeline back (bottom, spans right up to the corner on both desktop -- centered but wide --
+     and especially mobile -- full width) it runs into the sliders there -- nudged up here, clear
+     of a single-line desktop #timeline; the mobile case (#timeline wrapped taller, plus #controls
+     reappearing as its own full-width bar) needs a bigger nudge -- see the mobile media query
+     below. Same "err generous, no live-measurement option in plain CSS" reasoning as
+     #arControls/#controls's own mobile offsets. */
+  body.ar-active.ar-ui-visible #arOverlay { bottom: 100px; }
+
+  /* ---- Full-screen KPIs panel (added 2026-08-19, alongside Simple UI becoming the phone
+     default) ---- Simple UI's #hud only ever shows the role legend now (see the comment above),
+     not the KPI list -- a dozen-plus numeric rows read fine tucked in a corner of a spacious
+     desktop view, but crammed into a small panel over a phone's live camera/3D view they're
+     either unreadable or block the graphics entirely. #openKpisButton (in #hud, exempted from
+     Simple UI's hide same as #legend) opens this instead: the same row/group markup as the
+     inline #kpiBody (buildKpiRows renders into both), just given the whole screen and a close
+     button, mirroring the existing #dashboardOverlay pattern below rather than inventing a
+     different overlay convention. */
+  #kpiFullOverlay { position: fixed; inset: 0; background: rgba(10,10,13,0.72); backdrop-filter: blur(4px);
+    display: none; z-index: 60; overflow-y: auto; touch-action: pan-y; }
+  #kpiFullOverlay.visible { display: block; }
+  #kpiFullPanel { max-width: 640px; margin: 24px auto 40px; background: #1a1b21;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 18px 22px 24px; }
+  #kpiFullHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  #kpiFullHeader h2 { margin: 0; font-size: 16px; font-weight: 600; color: #fff; }
+  #kpiFullCount { font-size: 11px; color: #6f6f7e; }
+  #kpiFullBody .row { padding: 5px 0; font-size: 13px; }
+  #kpiFullBody .kpiGroup { color: #6f6f7e; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.04em; margin: 14px 0 4px; }
+  #kpiFullBody .kpiGroup:first-child { margin-top: 0; }
+  #kpiFullEmpty { color: #6f6f7e; font-size: 12px; display: none; padding: 12px 0; }
+
+  /* ---- Study Dashboard (History/Scatter/Histogram/Heatmap/Parallel) ---- */
+  #dashboardOverlay { position: fixed; inset: 0; background: rgba(10,10,13,0.55); backdrop-filter: blur(2px);
+    display: none; z-index: 50; overflow-y: auto; touch-action: pan-y; } /* see #kpiBody's own
+    touch-action comment above -- same override of body's touch-action: none */
+  #dashboardOverlay.visible { display: block; }
+  #dashboardPanel { max-width: 980px; margin: 40px auto 60px; background: #1a1b21;
+    border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 20px 24px 28px; }
+  #dashboardHeader { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 6px; }
+  #dashboardHeader h2 { margin: 0; font-size: 16px; font-weight: 600; color: #fff; }
+  #dashboardClose { padding: 5px 10px; }
+  #dashboardLoadRow { display: flex; gap: 6px; margin: 10px 0 6px; }
+  #dashboardLoadRow input { flex: 1; min-width: 0; background: rgba(255,255,255,0.06); color: #e8e8ee;
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 5px; padding: 6px 8px; font-size: 12px; }
+  #dashboardStatus { font-size: 11px; color: #9a9aa8; min-height: 14px; margin-bottom: 6px; }
+  .dashCard { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 12px 14px 16px; margin-top: 16px; }
+  .dashCard h3 { margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #e8e8ee; }
+  .dashCardControls { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-bottom: 10px; align-items: center; }
+  .dashCardControls label { font-size: 11px; color: #9a9aa8; display: flex; align-items: center; gap: 5px; }
+  .dashCardControls select, .dashCardControls input[type="number"] { background: rgba(255,255,255,0.08);
+    color: #e8e8ee; border: 1px solid rgba(255,255,255,0.14); border-radius: 5px; padding: 4px 6px; font-size: 11px; }
+  .dashCardControls input[type="number"] { width: 56px; }
+  .dashCard canvas { width: 100%; display: block; background: rgba(0,0,0,0.15); border-radius: 6px; }
+  .dashCard .dashEmpty { color: #6f6f7e; font-size: 11px; padding: 20px 0; text-align: center; }
+
+  /* ---- M6 (Mobile and QR Connection, 2026-08-19): narrow/phone-and-small-tablet layout ---- */
+  /* 640px covers phones in both orientations and small tablets in portrait; nothing here
+     changes desktop behavior (all rules are scoped inside this query). */
+  @media (max-width: 640px) {
+    /* #hud had no max-height at all on desktop -- fine there (plenty of vertical room), but on
+       a phone a fully expanded KPI panel (dozens of rows) can run taller than the viewport with
+       nothing to scroll it, silently pushing the load-file row and any error text off-screen.
+       Capping height and adding its own scroll here, rather than changing desktop's unbounded
+       layout, keeps this fix scoped to the screen size that actually needs it. */
+    #hud { top: 8px; left: 8px; right: 8px; width: auto; max-width: none; padding: 10px 12px;
+      font-size: 12px;
+      max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px); overflow-y: auto;
+      touch-action: pan-y; } /* see #kpiBody's touch-action comment -- same override, needed
+      here too now that #hud itself scrolls on narrow screens. width/max-width reset back to auto
+      -- the desktop rule's explicit width:280px (added for the drag-resize handle) would
+      otherwise over-constrain this box and make the right:8px inset above a no-op. */
+    #hud h1 { font-size: 13px; }
+    /* The drag-resize handle only makes sense against the desktop rule's fixed px width -- here
+       #hud already spans edge-to-edge via left/right insets (above), so there's nothing useful
+       to drag, and the handle would just be a dead 10px-wide strip sitting at the right edge. */
+    #hudResizeHandle { display: none; }
+
+    /* Desktop anchors this top-right next to the HUD's top-left -- on a narrow screen the two
+       would overlap, so this drops below the HUD instead and wraps rather than overflowing the
+       right edge (the row already includes Path/Mesh toggles, the profile dropdown, and Reset
+       Camera).
+
+       bottom was originally 78px (2026-08-19 first pass), sized for #timeline as it renders on
+       desktop -- one line. But #timeline *also* wraps on mobile (below: buttons on one line,
+       then time slider, then its readout, then speed slider, then its readout each forced onto
+       their own line for touch-target size), which made it up to ~180px tall in practice --
+       comfortably taller than the 78px gap assumed, so it silently overlapped and hid this
+       entire row (Path/Mesh included) behind it. Found 2026-08-19 during real-device testing:
+       the Path/Mesh buttons were unreachable on an actual phone despite looking fine in every
+       desktop-width preview. Bumped to 210px, well past that worst case, rather than trying to
+       hand-tune this to the exact pixel -- there is no live-measurement option in plain CSS, so
+       erring generous here is cheaper than another round of "invisible on a real device". */
+    #controls { position: fixed; top: auto; bottom: 210px; left: 8px; right: 8px;
+      flex-wrap: wrap; justify-content: flex-start; gap: 6px; z-index: 5; }
+    #modeGroup { flex-wrap: wrap; max-width: 100%; }
+
+    /* #arControls reworked 2026-08-19 (follow-up feedback), same idle/active split as the
+       desktop rule above -- mobile just needs its own numbers since #controls itself is
+       bottom-anchored here (bottom:210px, above) rather than top-anchored like desktop.
+       Idle: docked above #controls' own first row (the Full UI/Simple UI toggle, also left:8px)
+       -- #controls stays at its usual bottom:210px (still clearing #timeline below it, see its
+       own comment above), and this sits one button-row's worth of space further up from there.
+       Same "err generous, no live-measurement option in plain CSS" reasoning as #controls' own
+       210px offset. */
+    /* A wrapped Full UI + mode row can be about 90px tall. Keep Enter AR above that complete
+       footprint rather than assuming a single 44px button row, which caused the two controls to
+       overlap on narrower phones. Preserve the original left-side placement. */
+    #arControls { top: auto; bottom: 320px; left: 8px; right: auto; align-items: flex-start; }
+    /* Active: reworked 2026-08-19 (same-day follow-up) after an on-device overlap bug -- this
+       used to match #controls' own bottom:210px baseline exactly (so Hide UI would line up with
+       the Path/Mesh/BBox row), paired with physically moving Hide UI into that row's own markup
+       on toggle. That combination meant #arControls could be left with only Exit AR once Hide UI
+       was moved out, and Exit AR would then drop down onto that same shared baseline -- landing
+       exactly on top of Hide UI, which was very much still visible in #modeGroup right there.
+       Reverted the move (Hide UI stays in #arControls, stacked with Exit AR, same as idle) and
+       widened the clearance instead of narrowing it: 320px comfortably clears both #timeline (up
+       to ~180px tall wrapped, bottom:8px) and #controls/#modeGroup (up to ~90px tall wrapped,
+       bottom:210px) stacked together once Show UI reveals both, so #arControls never overlaps
+       either regardless of which of its own children happen to be visible. */
+    body.ar-active #arControls { bottom: 320px; left: 8px; right: auto; }
+
+    /* #arOverlay's desktop-scoped nudge (bottom:100px, above) isn't nearly enough here -- on
+       mobile, Show UI's #timeline (up to ~180px tall wrapped) and #controls (up to ~90px tall
+       wrapped, anchored at bottom:210px, and -- unlike desktop -- spanning the *full* width, so
+       it reaches the right-hand corner #arOverlay lives in too) both need clearing. Same 320px as
+       #arControls just above: both corners face the same full-width bar once Show UI is on, so
+       the same clearance works for either. */
+    body.ar-active.ar-ui-visible #arOverlay { bottom: 320px; }
+
+    /* Bigger hit targets throughout -- 7px/12px padding is a comfortable mouse target but tight
+       for a fingertip; ~44px is the usual touch-target guideline. */
+    button { padding: 11px 14px; font-size: 13px; }
+    #modeGroup button { padding: 9px 12px; }
+    #meshQuality { min-width: 72px; max-width: 92px; padding: 9px 20px 9px 7px; font-size: 12px; }
+    .playbackButton { padding: 11px 13px; font-size: 15px; }
+
+    /* Desktop's 460px min-width timeline would overflow a ~375-414px-wide phone screen on both
+       sides at once; span the available width instead of being a fixed-width bar centered by
+       transform. */
+    #timeline, #externalPlaybackNote { left: 8px; right: 8px; bottom: 8px;
+      transform: none; width: auto; min-width: 0; max-width: none; }
+    #timeline { flex-wrap: wrap; }
+    #timeline #timeSlider, #timeline #speedSlider { flex-basis: 100%; }
+    /* Native range inputs render very thin by default on mobile WebKit/Blink -- thicken the
+       track and thumb so both are easier to grab and see without needing custom slider markup. */
+    #timeline input[type="range"] { height: 28px; }
+    #timeline input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; }
+
+    #status { display: none; } /* redundant with #hud's own header/legend on a cramped screen */
+
+    #dashboardPanel { margin: 12px; padding: 14px 16px 20px; }
+    #dashboardHeader h2 { font-size: 15px; }
+    #dashboardLoadRow { flex-direction: column; }
+
+    #kpiFullPanel { margin: 12px; padding: 14px 16px 20px; }
+    #kpiFullHeader h2 { font-size: 15px; }
+  }
